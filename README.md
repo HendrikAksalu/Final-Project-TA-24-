@@ -1,9 +1,9 @@
 # Photo album: Final Project
-Description
+# Description
 
 A simple photo album project to display and organize pictures. The goal is to create an easy-to-use and visually appealing way to browse images.
 
-Features
+# Features
 
 Upload and display photos
 
