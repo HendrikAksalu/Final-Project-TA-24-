@@ -1,11 +1,6 @@
-# 📸 Photo Album: Final Project
+# Fotoalbum: Lõputöö
 
-## 📖 Description  
-A simple **photo album project** to display and organize pictures.  
-The goal is to create an easy-to-use and visually appealing way to browse images.  
+## Kirjeldus 
+Mõte oli teha fotoalbum, mis on peaasjalikult mõeldud mõeldud vanade fotode jaoks. Peaksin välja mõtlema mida ma täpselt teha tahan.  
 
-## ✨ Features  
-- 📂 Upload and display photos  
-- 🖼️ Organize images into albums or categories  
-- 📱 Responsive design for desktop and mobile  
-- 📝 *(Optional)* Add captions, dates, or tags to photos  
+Confluence'i link: https://ametikool-team-xmqdihqh.atlassian.net/wiki/spaces/Fotoalbum/pages/edit-v2/52625666?
