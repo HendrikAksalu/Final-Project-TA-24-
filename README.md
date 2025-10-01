@@ -15,3 +15,17 @@ Mõte oli teha fotoalbum, mis on peaasjalikult mõeldud mõeldud vanade fotode j
 - Kasutajad oleksid huvilised, kes sooviksid fotosid lisada ja vaadata.
 
 - Samas oleks tore kui mingi muuseum teeb/täidab fotokogu, et saaks nendega jagada kui soov oleks.
+
+## Ideede korjamine
+
+- Visuaali mõtlemine
+
+- Sarnaste lehtede vaatamine
+
+- Videoid võiks ka saada lisada
+
+- Ajapaik tundub hea koht kust ideed saada.
+
+- Tahaksin midagi erilist teha, et ei kattuks nii palju.
+
+ 
