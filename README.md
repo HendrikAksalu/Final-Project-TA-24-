@@ -28,4 +28,8 @@ Mõte oli teha fotoalbum, mis on peaasjalikult mõeldud mõeldud vanade fotode j
 
 - Tahaksin midagi erilist teha, et ei kattuks nii palju.
 
+## Protsess
+
+- Hakkasin pusima Figmaga, üritan paika panna algse versiooni.
+
  
