@@ -1,0 +1,14 @@
+@import './base.css';
+
+#app {
+  width: 100%;
+}
+
+:root {
+  --paper-bg: #e9e6de;
+}
+
+body {
+  background: var(--paper-bg);
+  color: #1c1714;
+}
