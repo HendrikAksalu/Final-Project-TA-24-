@@ -1,18 +1,38 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import AppHeader from '@/components/AppHeader.vue'
 
 const route = useRoute()
+const memoriesKey = computed(() => `fototeek_memories_${route.query.albumId || 'none'}`)
 const liked = ref(false)
 const editing = ref(false)
-const story = ref(
-  "This was the first summer after Uncle Arthur returned. Grandma Rose spent all morning preparing the basket. You can still see a faint smudge of jam on the original print. We talked for hours under the apple trees...",
-)
-const who = ref('Grandma Rose, Uncle Arthur')
-const when = ref('September, 1954')
-const where = ref('Sussex, Old Orchard Lane')
+const story = ref('')
+const storyInput = ref(null)
+const whoInput = ref(null)
+const whenInput = ref(null)
+const whereInput = ref(null)
+const who = ref('')
+const when = ref('')
+const where = ref('')
+const title = ref('')
 
-const memoryTitle = computed(() => route.query.title || 'Harvest in the orchard, 1952')
+function loadMemories() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(memoriesKey.value) || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    return []
+  }
+}
+
+const memories = ref(loadMemories())
+
+const currentMemory = computed(() =>
+  memories.value.find((item) => String(item.id) === String(route.query.memoryId)),
+)
+
+const memoryTitle = computed(() => title.value || route.query.title || 'Mälestus')
 
 function shareMemory() {
   const url = window.location.href
@@ -24,20 +44,59 @@ function shareMemory() {
 }
 
 function downloadPlaceholder() {
-  alert('Download will be connected next.')
+  alert('Allalaadimine lisatakse peagi.')
 }
+
+function saveCurrentMemory() {
+  if (!currentMemory.value) return
+
+  const index = memories.value.findIndex((item) => String(item.id) === String(currentMemory.value.id))
+  if (index === -1) return
+
+  memories.value[index] = {
+    ...memories.value[index],
+    story: story.value,
+    who: who.value,
+    when: when.value,
+    where: where.value,
+  }
+  localStorage.setItem(memoriesKey.value, JSON.stringify(memories.value))
+}
+
+function toggleEditing() {
+  if (editing.value) saveCurrentMemory()
+  editing.value = !editing.value
+}
+
+function startEditing(field) {
+  editing.value = true
+  nextTick(() => {
+    const fieldMap = {
+      story: storyInput.value,
+      who: whoInput.value,
+      when: whenInput.value,
+      where: whereInput.value,
+    }
+    fieldMap[field]?.focus()
+  })
+}
+
+watch(
+  currentMemory,
+  (memory) => {
+    story.value = memory?.story || ''
+    who.value = memory?.who || ''
+    when.value = memory?.when || ''
+    where.value = memory?.where || ''
+    title.value = memory?.title || ''
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <main class="page">
-    <header class="topbar">
-      <RouterLink to="/album" class="icon-link" aria-label="Go back">←</RouterLink>
-      <div class="brand-wrap">
-        <span class="book-icon">◧</span>
-        <span class="brand-text">Fototeek</span>
-      </div>
-      <button class="icon-link" type="button" aria-label="More actions">⋮</button>
-    </header>
+    <AppHeader :back-to="{ path: '/albumid', query: { albumId: route.query.albumId } }" />
 
     <section class="hero-card">
       <div class="photo" />
@@ -45,35 +104,54 @@ function downloadPlaceholder() {
     </section>
 
     <section class="title">
-      <p>Your heritage</p>
-      <h1>Curating the timeless threads of your family's tapestry.</h1>
-      <p v-if="!editing" class="story">{{ story }}</p>
-      <textarea v-else v-model="story" class="story-editor" rows="5" />
+      <p>Sinu pärand</p>
+      <h1>Säilitame sinu pereloo ajatuid niite.</h1>
+      <p v-if="!editing && story" class="story editable-value" @click="startEditing('story')">{{ story }}</p>
+      <p v-else-if="!editing" class="story placeholder editable-value" @click="startEditing('story')">
+        Lisa siia mälestuse lugu...
+      </p>
+      <textarea
+        v-else
+        ref="storyInput"
+        v-model="story"
+        class="story-editor"
+        rows="5"
+        placeholder="Lisa siia mälestuse lugu..."
+      />
     </section>
 
     <section class="info-list">
       <article class="info-card">
         <span class="icon">👥</span>
         <div>
-          <p class="label">Who</p>
-          <p v-if="!editing">{{ who }}</p>
-          <input v-else v-model="who" type="text" class="field-input" />
+          <p class="label">Kes</p>
+          <p v-if="!editing && who" class="editable-value" @click="startEditing('who')">{{ who }}</p>
+          <p v-else-if="!editing" class="editable-value placeholder-text" @click="startEditing('who')">
+            Lisa siia, kes on fotol...
+          </p>
+          <input v-else ref="whoInput" v-model="who" type="text" class="field-input" />
         </div>
       </article>
       <article class="info-card">
         <span class="icon">📅</span>
         <div>
-          <p class="label">When</p>
-          <p v-if="!editing">{{ when }}</p>
-          <input v-else v-model="when" type="text" class="field-input" />
+          <p class="label">Millal</p>
+          <p v-if="!editing && when" class="editable-value" @click="startEditing('when')">{{ when }}</p>
+          <p v-else-if="!editing" class="editable-value placeholder-text" @click="startEditing('when')">
+            Lisa siia aeg...
+          </p>
+          <input v-else ref="whenInput" v-model="when" type="text" class="field-input" />
         </div>
       </article>
       <article class="info-card">
         <span class="icon">📍</span>
         <div>
-          <p class="label">Where</p>
-          <p v-if="!editing">{{ where }}</p>
-          <input v-else v-model="where" type="text" class="field-input" />
+          <p class="label">Kus</p>
+          <p v-if="!editing && where" class="editable-value" @click="startEditing('where')">{{ where }}</p>
+          <p v-else-if="!editing" class="editable-value placeholder-text" @click="startEditing('where')">
+            Lisa siia asukoht...
+          </p>
+          <input v-else ref="whereInput" v-model="where" type="text" class="field-input" />
         </div>
       </article>
     </section>
@@ -81,65 +159,32 @@ function downloadPlaceholder() {
     <section class="actions">
       <button type="button" class="action-btn" @click="liked = !liked">{{ liked ? '♥' : '♡' }}</button>
       <button type="button" class="action-btn" @click="shareMemory">↗</button>
-      <button type="button" class="action-btn edit" @click="editing = !editing">
-        {{ editing ? 'Save' : 'Edit' }}
+      <button type="button" class="action-btn edit" @click="toggleEditing">
+        {{ editing ? 'Salvesta' : 'Muuda' }}
       </button>
       <button type="button" class="action-btn" @click="downloadPlaceholder">⇩</button>
     </section>
 
     <footer class="footer">
       <nav>
-        <a href="#">About</a>
-        <a href="#">Privacy</a>
-        <a href="#">Ethics</a>
+        <a href="#">Meist</a>
+        <a href="#">Privaatsus</a>
+        <a href="#">Eetika</a>
       </nav>
       <p class="bookmark">◫</p>
-      <p class="copyright">© 2024 Fototeek Physical Archives</p>
-      <p class="note">Preserving the narrative of our ancestors.</p>
+      <p class="copyright">© 2025 Fototeek</p>
+      <p class="note">Hoiame meie esivanemate lugusid.</p>
     </footer>
   </main>
 </template>
 
 <style scoped>
 .page {
-  max-width: 390px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 16px 14px 28px;
   color: #1c1714;
   font-family: Georgia, 'Times New Roman', serif;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.icon-link {
-  border: none;
-  background: transparent;
-  text-decoration: none;
-  color: #1c1714;
-  font-size: 24px;
-  line-height: 1;
-  width: 28px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.brand-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.book-icon {
-  font-size: 15px;
-}
-
-.brand-text {
-  font-size: 38px;
-  line-height: 1;
 }
 
 .hero-card {
@@ -177,7 +222,7 @@ function downloadPlaceholder() {
 .title h1 {
   margin-top: 16px;
   font-size: 52px;
-  line-height: 0.96;
+  line-height: 1.02;
   font-weight: 500;
 }
 
@@ -191,6 +236,18 @@ function downloadPlaceholder() {
   color: #53473f;
   font-size: 18px !important;
   line-height: 1.3;
+}
+
+.story.placeholder {
+  color: #8f8478;
+}
+
+.editable-value {
+  cursor: text;
+}
+
+.placeholder-text {
+  color: #8f8478;
 }
 
 .story-editor {
@@ -319,5 +376,36 @@ function downloadPlaceholder() {
   font-style: italic;
   font-size: 12px;
   color: #938578;
+}
+
+@media (min-width: 900px) {
+  .page {
+    padding: 28px 28px 40px;
+  }
+
+  .hero-card {
+    max-width: 620px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .photo {
+    height: 480px;
+  }
+
+  .title h1 {
+    font-size: 72px;
+  }
+
+  .story,
+  .story-editor {
+    max-width: 640px;
+  }
+
+  .info-list {
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 </style>

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import AppHeader from '@/components/AppHeader.vue'
 
 const user = ref(null)
 const menuOpen = ref(false)
@@ -13,7 +14,7 @@ try {
 }
 
 const isLoggedIn = computed(() => Boolean(user.value))
-const beginArchiveRoute = computed(() => (isLoggedIn.value ? '/heritage' : '/register'))
+const beginArchiveRoute = computed(() => (isLoggedIn.value ? '/parand' : '/registreeru'))
 
 function logout() {
   localStorage.removeItem('fototeek_user')
@@ -25,143 +26,80 @@ function logout() {
 
 <template>
   <main class="page">
-    <header class="topbar">
-      <div class="brand">
-        <span class="brand-dot" />
-        <span class="brand-text">Fototeek</span>
+    <div class="header-wrap">
+      <AppHeader
+        :show-auth-links="!isLoggedIn"
+        :show-menu="isLoggedIn"
+        @menu-click="menuOpen = !menuOpen"
+      />
+      <div v-if="isLoggedIn && menuOpen" class="menu-popover">
+        <RouterLink to="/parand" @click="menuOpen = false">Minu pärand</RouterLink>
+        <button type="button" @click="logout">Logi välja</button>
       </div>
-      <nav v-if="!isLoggedIn" class="auth-links">
-        <RouterLink to="/login">Login</RouterLink>
-        <RouterLink class="register" to="/register">Register</RouterLink>
-      </nav>
-      <div v-else class="menu-wrap">
-        <button class="menu-button" type="button" aria-label="Open menu" @click="menuOpen = !menuOpen">
-          ⋮
-        </button>
-        <div v-if="menuOpen" class="menu-popover">
-          <RouterLink to="/heritage" @click="menuOpen = false">My Heritage</RouterLink>
-          <button type="button" @click="logout">Log out</button>
-        </div>
-      </div>
-    </header>
+    </div>
 
     <section class="photo-card">
       <div class="photo-frame">
         <div class="photo-placeholder" />
-        <p>Sunday Picnic, 1954</p>
+        <p>Pühapäevane piknik, 1954</p>
       </div>
     </section>
 
     <section class="intro">
-      <p class="eyebrow">Family archives</p>
+      <p class="eyebrow">Perearhiiv</p>
       <h1>
-        A digital home for
-        <em>living memories.</em>
+        Digitaalne kodu sinu
+        <em>elavatele mälestustele.</em>
       </h1>
       <p class="copy">
-        Preserve the tactile essence of your family's history in a permanent, beautiful
-        digital archive.
+        Hoia pere tähtsad hetked alles ka tulevaste põlvkondade jaoks.
       </p>
     </section>
 
     <section class="cta-box">
-      <RouterLink :to="beginArchiveRoute" class="cta-button">Begin your archive</RouterLink>
-      <p>Complimentary for your first 500 precious memories.</p>
+      <RouterLink :to="beginArchiveRoute" class="cta-button">Alusta oma arhiivi</RouterLink>
+      <p>Iga mälestus väärib oma kohta.</p>
     </section>
 
     <section class="feature-list">
       <article class="feature-card">
-        <h2>Digitize</h2>
-        <p>Transform physical prints into lasting digital heirlooms.</p>
+        <h2>Digitaliseeri</h2>
+        <p>Muuda paberfotod kestvateks digitaalseteks päranditeks.</p>
       </article>
       <article class="feature-card">
-        <h2>Document</h2>
-        <p>Annotate your photos with the stories only you know.</p>
+        <h2>Dokumenteeri</h2>
+        <p>Lisa fotodele lood, mida tead ainult sina.</p>
       </article>
       <article class="feature-card">
-        <h2>Heritage</h2>
-        <p>Share your curated legacy with the next generation.</p>
+        <h2>Pärand</h2>
+        <p>Jaga oma hoolikalt hoitud pärandit järgmise põlvkonnaga.</p>
       </article>
     </section>
 
     <footer class="footer">
       <nav>
-        <a href="#">About</a>
-        <a href="#">Privacy</a>
-        <a href="#">Ethics</a>
+        <a href="#">Meist</a>
+        <a href="#">Privaatsus</a>
+        <a href="#">Eetika</a>
       </nav>
-      <p class="copyright">© 2024 Fototeek Physical Archives</p>
-      <p class="note">Preserved for tomorrow's generations.</p>
+      <p class="copyright">© 2025 Fototeek</p>
+      <p class="note">Hoitud homsete põlvkondade jaoks.</p>
     </footer>
   </main>
 </template>
 
 <style scoped>
 .page {
-  max-width: 390px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 20px 14px 28px;
   color: #1c1714;
   font-family: Georgia, 'Times New Roman', serif;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.brand-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: #1c1714;
-}
-
-.brand-text {
-  font-size: 30px;
-  line-height: 1;
-}
-
-.auth-links {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-family: Arial, sans-serif;
-  font-size: 10px;
-}
-
-.auth-links a {
-  color: #1c1714;
-  text-decoration: none;
-}
-
-.auth-links .register {
-  background: #1e130c;
-  color: #f8f5ee;
-  border-radius: 999px;
-  padding: 7px 12px;
-}
-
-.menu-button {
-  border: 0;
-  background: transparent;
-  color: #1c1714;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.menu-wrap {
+.header-wrap {
   position: relative;
+  grid-area: header;
 }
 
 .menu-popover {
@@ -201,6 +139,7 @@ function logout() {
   margin-top: 18px;
   display: flex;
   justify-content: center;
+  grid-area: photo;
 }
 
 .photo-frame {
@@ -227,6 +166,7 @@ function logout() {
 .intro {
   margin-top: 26px;
   text-align: center;
+  grid-area: intro;
 }
 
 .eyebrow {
@@ -263,6 +203,7 @@ h1 em {
   border-radius: 18px;
   padding: 22px 16px 20px;
   text-align: center;
+  grid-area: cta;
 }
 
 .cta-button {
@@ -290,6 +231,7 @@ h1 em {
   margin-top: 18px;
   display: grid;
   gap: 11px;
+  grid-area: features;
 }
 
 .feature-card {
@@ -316,6 +258,7 @@ h1 em {
 .footer {
   margin-top: 44px;
   text-align: center;
+  grid-area: footer;
 }
 
 .footer nav {
@@ -347,5 +290,51 @@ h1 em {
   font-style: italic;
   font-size: 12px;
   color: #938578;
+}
+
+@media (min-width: 900px) {
+  .page {
+    padding: 28px 28px 40px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'header header'
+      'photo intro'
+      'photo cta'
+      'features features'
+      'footer footer';
+    gap: 24px 32px;
+    align-items: start;
+  }
+
+  .photo-card,
+  .intro,
+  .cta-box,
+  .feature-list,
+  .footer {
+    margin-top: 0;
+  }
+
+  .photo-frame {
+    width: min(100%, 380px);
+  }
+
+  h1 {
+    font-size: 74px;
+  }
+
+  .copy {
+    max-width: 520px;
+    font-size: 20px;
+  }
+
+  .cta-box {
+    max-width: 520px;
+  }
+
+  .feature-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
 }
 </style>

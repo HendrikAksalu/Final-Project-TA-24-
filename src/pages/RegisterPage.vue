@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import AppHeader from '@/components/AppHeader.vue'
 
 const router = useRouter()
 
@@ -23,7 +24,7 @@ async function onSubmit() {
   localStorage.setItem(
     'fototeek_user',
     JSON.stringify({
-      name: form.value.name || 'User',
+      name: form.value.name || 'Kasutaja',
       email: form.value.email || '',
     }),
   )
@@ -34,19 +35,12 @@ async function onSubmit() {
 
 <template>
   <main class="page">
-    <header class="topbar">
-      <RouterLink to="/" class="icon-link" aria-label="Go back">←</RouterLink>
-      <div class="brand-wrap">
-        <span class="book-icon">◧</span>
-        <span class="brand-text">Fototeek</span>
-      </div>
-      <button class="icon-link" aria-label="More actions">⋮</button>
-    </header>
+    <AppHeader :back-to="'/'" />
 
     <section class="title">
-      <p>Family archives</p>
-      <h1>Begin your archive.</h1>
-      <h2>Complimentary for your first 500 precious memories.</h2>
+      <p>Perearhiiv</p>
+      <h1>Alusta oma arhiivi.</h1>
+      <h2>Esimesed 500 kallist mälestust on tasuta.</h2>
     </section>
 
     <section class="stacked-photo" aria-hidden="true">
@@ -55,20 +49,20 @@ async function onSubmit() {
     </section>
 
     <form class="register-form" @submit.prevent="onSubmit">
-      <input v-model="form.name" type="text" placeholder="Full Name" />
-      <input v-model="form.email" type="email" placeholder="Email Address" />
+      <input v-model="form.name" type="text" placeholder="Täisnimi" />
+      <input v-model="form.email" type="email" placeholder="E-posti aadress" />
 
       <div class="password-wrap">
-        <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="Password" />
+        <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="Parool" />
         <button type="button" @click="showPassword = !showPassword">
-          {{ showPassword ? 'HIDE' : 'SHOW' }}
+          {{ showPassword ? 'PEIDA' : 'NÄITA' }}
         </button>
       </div>
 
-      <input v-model="form.password_confirmation" type="password" placeholder="Confirm Password" />
+      <input v-model="form.password_confirmation" type="password" placeholder="Kinnita parool" />
 
       <button type="submit" class="submit-btn" :disabled="isSubmitting">
-        {{ isSubmitting ? 'Registering...' : 'Register' }}
+        {{ isSubmitting ? 'Registreerin...' : 'Registreeru' }}
       </button>
     </form>
 
@@ -76,63 +70,30 @@ async function onSubmit() {
     <p v-if="successMessage" class="feedback success">{{ successMessage }}</p>
 
     <p class="signin-line">
-      Already have an archive?
-      <RouterLink to="/login">Sign in</RouterLink>
+      Sul on juba arhiiv?
+      <RouterLink to="/logi-sisse">Logi sisse</RouterLink>
     </p>
 
     <footer class="footer">
       <nav>
-        <a href="#">About</a>
-        <a href="#">Privacy</a>
-        <a href="#">Ethics</a>
+        <a href="#">Meist</a>
+        <a href="#">Privaatsus</a>
+        <a href="#">Eetika</a>
       </nav>
       <p class="bookmark">◫</p>
-      <p class="copyright">© 2024 Fototeek Physical Archives</p>
-      <p class="note">Preserving the narrative of our ancestors.</p>
+      <p class="copyright">© 2025 Fototeek</p>
+      <p class="note">Hoiame meie esivanemate lugusid.</p>
     </footer>
   </main>
 </template>
 
 <style scoped>
 .page {
-  max-width: 390px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 16px 14px 28px;
   color: #1c1714;
   font-family: Georgia, 'Times New Roman', serif;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.icon-link {
-  border: none;
-  background: transparent;
-  text-decoration: none;
-  color: #1c1714;
-  font-size: 24px;
-  line-height: 1;
-  width: 28px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.brand-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.brand-text {
-  font-size: 38px;
-  line-height: 1;
-}
-
-.book-icon {
-  font-size: 15px;
 }
 
 .title {
@@ -323,5 +284,34 @@ async function onSubmit() {
   font-style: italic;
   font-size: 12px;
   color: #938578;
+}
+
+@media (min-width: 900px) {
+  .page {
+    padding: 28px 28px 40px;
+  }
+
+  .title h1 {
+    font-size: 72px;
+  }
+
+  .title h2 {
+    font-size: 42px;
+  }
+
+  .stacked-photo {
+    height: 230px;
+  }
+
+  .polaroid {
+    width: 160px;
+    height: 200px;
+  }
+
+  .register-form {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 </style>

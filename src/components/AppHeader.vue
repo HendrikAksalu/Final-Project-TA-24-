@@ -1,0 +1,160 @@
+<script setup>
+defineProps({
+  backTo: {
+    type: [String, Object],
+    default: null,
+  },
+  showMenu: {
+    type: Boolean,
+    default: true,
+  },
+  showAuthLinks: {
+    type: Boolean,
+    default: false,
+  },
+})
+
+defineEmits(['menu-click'])
+</script>
+
+<template>
+  <header class="topbar">
+    <RouterLink v-if="backTo" :to="backTo" class="icon-link" aria-label="Mine tagasi">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M14.9 5.2 8.1 12l6.8 6.8-1.8 1.8L4.5 12l8.6-8.6 1.8 1.8Z"
+          fill="currentColor"
+        />
+      </svg>
+    </RouterLink>
+    <div v-else class="left-spacer" aria-hidden="true"></div>
+
+    <div class="brand-wrap">
+      <img class="brand-logo" src="/logo.png" alt="Fototeek logo" />
+      <span class="brand-text">Fototeek</span>
+    </div>
+
+    <nav v-if="showAuthLinks" class="auth-links">
+      <RouterLink to="/logi-sisse">Logi sisse</RouterLink>
+      <RouterLink class="register" to="/registreeru">Registreeru</RouterLink>
+    </nav>
+    <button
+      v-else-if="showMenu"
+      class="icon-link"
+      type="button"
+      aria-label="Veel tegevusi"
+      @click="$emit('menu-click')"
+    >
+      ⋮
+    </button>
+    <div v-else class="left-spacer" aria-hidden="true"></div>
+  </header>
+</template>
+
+<style scoped>
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.icon-link {
+  border: none;
+  background: transparent;
+  text-decoration: none;
+  color: #1c1714;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.icon-link svg {
+  width: 28px;
+  height: 28px;
+}
+
+.left-spacer {
+  width: 32px;
+  height: 32px;
+}
+
+.brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.brand-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.brand-text {
+  font-size: 30px;
+  line-height: 1;
+}
+
+.auth-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+}
+
+.auth-links a {
+  color: #1c1714;
+  text-decoration: none;
+}
+
+.auth-links .register {
+  background: #1e130c;
+  color: #f8f5ee;
+  border-radius: 999px;
+  padding: 7px 12px;
+}
+
+@media (min-width: 900px) {
+  .icon-link,
+  .left-spacer {
+    width: 40px;
+    height: 40px;
+  }
+
+  .icon-link {
+    font-size: 28px;
+  }
+
+  .icon-link svg {
+    width: 34px;
+    height: 34px;
+  }
+
+  .brand-logo {
+    width: 34px;
+    height: 34px;
+  }
+
+  .brand-text {
+    font-size: 46px;
+  }
+
+  .auth-links {
+    gap: 14px;
+    font-size: 12px;
+  }
+
+  .auth-links .register {
+    padding: 9px 16px;
+  }
+}
+</style>

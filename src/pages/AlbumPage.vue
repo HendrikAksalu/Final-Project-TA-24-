@@ -1,107 +1,164 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import AppHeader from '@/components/AppHeader.vue'
 
-const memories = ref([
-  { id: 1, title: 'August, 1952', photoClass: 'one', favorite: false, rotate: '' },
-  { id: 2, title: 'The old Mercury', photoClass: 'two', favorite: true, rotate: 'rotate-right' },
-  { id: 3, title: 'Spring blossoms', photoClass: 'three', favorite: false, rotate: 'rotate-left' },
-  { id: 4, title: 'Lake sunsets', photoClass: 'four', favorite: false, rotate: '' },
-])
+const route = useRoute()
+const ALBUMS_KEY = 'fototeek_albums'
+
+function loadAlbums() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(ALBUMS_KEY) || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    return []
+  }
+}
+
+const albums = ref(loadAlbums())
+
+const currentAlbum = computed(() =>
+  albums.value.find((album) => String(album.id) === String(route.query.albumId)),
+)
+
+const memoriesKey = computed(() => `fototeek_memories_${route.query.albumId || 'none'}`)
+
+function loadMemories() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(memoriesKey.value) || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    return []
+  }
+}
+
+const memories = ref(loadMemories())
+const searchQuery = ref('')
+const photoClasses = ['one', 'two', 'three', 'four']
+
+function getMemoryTags(memory) {
+  const tags = []
+  if (memory.who) tags.push(...memory.who.split(',').map((part) => part.trim()).filter(Boolean))
+  if (memory.where) tags.push(...memory.where.split(',').map((part) => part.trim()).filter(Boolean))
+  return [...new Set(tags)]
+}
+
+const filteredMemories = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return memories.value
+
+  return memories.value.filter((memory) => {
+    const searchable = [memory.title, memory.who, memory.where, ...getMemoryTags(memory)]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase()
+    return searchable.includes(query)
+  })
+})
+
+function saveMemories() {
+  localStorage.setItem(memoriesKey.value, JSON.stringify(memories.value))
+  if (!currentAlbum.value) return
+
+  const index = albums.value.findIndex((album) => String(album.id) === String(currentAlbum.value.id))
+  if (index === -1) return
+
+  albums.value[index] = { ...albums.value[index], memories: memories.value.length }
+  localStorage.setItem(ALBUMS_KEY, JSON.stringify(albums.value))
+}
+
+function addMemory() {
+  const nextIndex = memories.value.length + 1
+  memories.value.unshift({
+    id: Date.now(),
+    title: `Uus mälestus ${nextIndex}`,
+    photoClass: photoClasses[nextIndex % photoClasses.length],
+    favorite: false,
+    rotate: nextIndex % 2 ? 'rotate-right' : '',
+    story: '',
+    who: '',
+    when: '',
+    where: '',
+  })
+  saveMemories()
+}
 
 function toggleFavorite(id) {
   const memory = memories.value.find((item) => item.id === id)
-  if (memory) memory.favorite = !memory.favorite
+  if (memory) {
+    memory.favorite = !memory.favorite
+    saveMemories()
+  }
 }
 </script>
 
 <template>
   <main class="page">
-    <header class="topbar">
-      <RouterLink to="/heritage" class="icon-link" aria-label="Go back">←</RouterLink>
-      <div class="brand-wrap">
-        <span class="book-icon">◧</span>
-        <span class="brand-text">Fototeek</span>
-      </div>
-      <button class="icon-link" type="button" aria-label="More actions">⋮</button>
-    </header>
+    <AppHeader :back-to="'/parand'" />
 
     <section class="title">
-      <p>Family archives</p>
-      <h1>Miller Family Estate</h1>
+      <p>Perearhiiv</p>
+      <h1>{{ currentAlbum?.title || 'Album' }}</h1>
       <p class="subtitle">
-        Preserving the tactile essence of your family's history in a permanent, beautiful
-        digital archive.
+        Säilitame sinu pere ajaloo puudutatava olemuse püsivas ja kaunis
+        digitaalses arhiivis.
       </p>
     </section>
 
-    <section class="album-grid">
-      <article v-for="memory in memories" :key="memory.id" class="polaroid" :class="memory.rotate">
+    <section v-if="!currentAlbum" class="empty-state">
+      <p>Albumit ei leitud.</p>
+      <p>Mine tagasi ja loo album enne, kui lisad mälestusi.</p>
+    </section>
+
+    <div v-if="currentAlbum" class="search-wrap">
+      <input v-model="searchQuery" type="text" placeholder="Otsi nime või koha järgi..." class="search-input" />
+    </div>
+
+    <section v-if="currentAlbum && filteredMemories.length" class="album-grid">
+      <article v-for="memory in filteredMemories" :key="memory.id" class="polaroid" :class="memory.rotate">
         <RouterLink
-          :to="{ path: '/memory', query: { title: memory.title } }"
+          :to="{ path: '/malestus', query: { title: memory.title, albumId: route.query.albumId, memoryId: memory.id } }"
           class="memory-link"
         >
           <div class="photo" :class="memory.photoClass" />
           <h2>{{ memory.title }}</h2>
+          <div v-if="getMemoryTags(memory).length" class="tag-list">
+            <span v-for="tag in getMemoryTags(memory)" :key="tag" class="tag-chip">#{{ tag }}</span>
+          </div>
         </RouterLink>
         <button type="button" class="fav-btn" @click="toggleFavorite(memory.id)">
           {{ memory.favorite ? '★' : '☆' }}
         </button>
       </article>
     </section>
+    <section v-else-if="currentAlbum" class="empty-state">
+      <p>Selles albumis pole veel mälestusi.</p>
+      <p>Lisa esimene mälestus, et album täituma hakkaks.</p>
+    </section>
+    <button v-if="currentAlbum" type="button" class="create-btn" @click="addMemory">
+      Lisa mälestus
+    </button>
 
     <footer class="footer">
       <nav>
-        <a href="#">About</a>
-        <a href="#">Privacy</a>
-        <a href="#">Ethics</a>
+        <a href="#">Meist</a>
+        <a href="#">Privaatsus</a>
+        <a href="#">Eetika</a>
       </nav>
       <p class="bookmark">◫</p>
-      <p class="copyright">© 2024 Fototeek Physical Archives</p>
-      <p class="note">Preserving the narrative of our ancestors.</p>
+      <p class="copyright">© 2025 Fototeek</p>
+      <p class="note">Hoiame meie esivanemate lugusid.</p>
     </footer>
   </main>
 </template>
 
 <style scoped>
 .page {
-  max-width: 390px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 16px 14px 28px;
   color: #1c1714;
   font-family: Georgia, 'Times New Roman', serif;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.icon-link {
-  border: none;
-  background: transparent;
-  text-decoration: none;
-  color: #1c1714;
-  font-size: 24px;
-  line-height: 1;
-  width: 28px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.brand-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.book-icon {
-  font-size: 15px;
-}
-
-.brand-text {
-  font-size: 38px;
-  line-height: 1;
 }
 
 .title {
@@ -140,6 +197,37 @@ function toggleFavorite(id) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.empty-state {
+  margin-top: 24px;
+  padding: 20px 16px;
+  border-radius: 16px;
+  background: #f5f2eb;
+  text-align: center;
+}
+
+.empty-state p:first-child {
+  font-size: 20px;
+}
+
+.empty-state p:last-child {
+  margin-top: 8px;
+  color: #6f6257;
+  font-style: italic;
+}
+
+.search-wrap {
+  margin-top: 18px;
+}
+
+.search-input {
+  width: 100%;
+  border: 1px solid #ddd4c6;
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #f8f6f0;
+  font-size: 14px;
 }
 
 .polaroid {
@@ -213,6 +301,40 @@ function toggleFavorite(id) {
   font-weight: 500;
 }
 
+.tag-list {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-chip {
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+  background: #e9e2d6;
+  color: #5d4f45;
+  padding: 4px 8px;
+  border-radius: 999px;
+}
+
+.create-btn {
+  margin-top: 22px;
+  width: 100%;
+  display: block;
+  text-align: center;
+  border: none;
+  border-radius: 12px;
+  background: #1e130c;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  padding: 17px 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 .footer {
   margin-top: 52px;
   text-align: center;
@@ -252,5 +374,28 @@ function toggleFavorite(id) {
   font-style: italic;
   font-size: 12px;
   color: #938578;
+}
+
+@media (min-width: 900px) {
+  .page {
+    padding: 28px 28px 40px;
+  }
+
+  .title h1 {
+    font-size: 72px;
+  }
+
+  .subtitle {
+    max-width: 640px;
+  }
+
+  .album-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
+  .photo {
+    height: 210px;
+  }
 }
 </style>

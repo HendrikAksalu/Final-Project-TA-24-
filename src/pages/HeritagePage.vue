@@ -1,111 +1,88 @@
 <script setup>
 import { ref } from 'vue'
+import AppHeader from '@/components/AppHeader.vue'
 
-const albums = ref([
-  { title: 'Summer of 64', memories: 24, photoClass: 'beach', rotate: '' },
-  { title: "Grandpa's shop", memories: 18, photoClass: 'workshop', rotate: 'rotate-right' },
-  { title: 'Wedding day', memories: 42, photoClass: 'portrait', rotate: 'rotate-left' },
-  { title: 'The old farm', memories: 56, photoClass: 'barn', rotate: '' },
-])
+const STORAGE_KEY = 'fototeek_albums'
+
+function loadAlbums() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    return []
+  }
+}
+
+const albums = ref(loadAlbums())
+
+function saveAlbums() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(albums.value))
+}
 
 function createAlbum() {
   const index = albums.value.length + 1
   albums.value.unshift({
-    title: `New Album ${index}`,
+    id: Date.now(),
+    title: `Uus album ${index}`,
     memories: 0,
     photoClass: 'beach',
     rotate: index % 2 ? 'rotate-right' : '',
   })
+  saveAlbums()
 }
 </script>
 
 <template>
   <main class="page">
-    <header class="topbar">
-      <RouterLink to="/" class="icon-link" aria-label="Go back">←</RouterLink>
-      <div class="brand-wrap">
-        <span class="book-icon">◧</span>
-        <span class="brand-text">Fototeek</span>
-      </div>
-      <button class="icon-link" type="button" aria-label="More actions">⋮</button>
-    </header>
+    <AppHeader :back-to="'/'" />
 
     <section class="title">
-      <p>Your heritage</p>
+      <p>Sinu pärand</p>
       <h1>
-        Curating the timeless threads of your family's tapestry.
+        Säilitame sinu pereloo ajatuid niite.
       </h1>
     </section>
 
-    <section class="album-grid">
+    <section v-if="albums.length" class="album-grid">
       <RouterLink
         v-for="album in albums"
-        :key="album.title"
-        to="/album"
+        :key="album.id || album.title"
+        :to="{ path: '/albumid', query: { albumId: album.id } }"
         class="polaroid"
         :class="album.rotate"
       >
         <div class="photo" :class="album.photoClass" />
         <h2>{{ album.title }}</h2>
-        <span>{{ album.memories }} Memories</span>
+        <span>{{ album.memories }} mälestust</span>
       </RouterLink>
     </section>
+    <section v-else class="empty-state">
+      <p>Sul pole veel ühtegi albumit.</p>
+      <p>Loo esimene album, et alustada mälestuste kogumist.</p>
+    </section>
 
-    <button type="button" class="create-btn" @click="createAlbum">Create new album</button>
+    <button type="button" class="create-btn" @click="createAlbum">Loo uus album</button>
 
     <footer class="footer">
       <nav>
-        <a href="#">About</a>
-        <a href="#">Privacy</a>
-        <a href="#">Ethics</a>
+        <a href="#">Meist</a>
+        <a href="#">Privaatsus</a>
+        <a href="#">Eetika</a>
       </nav>
       <p class="bookmark">◫</p>
-      <p class="copyright">© 2024 Fototeek Physical Archives</p>
-      <p class="note">Preserving the narrative of our ancestors.</p>
+      <p class="copyright">© 2025 Fototeek</p>
+      <p class="note">Hoiame meie esivanemate lugusid.</p>
     </footer>
   </main>
 </template>
 
 <style scoped>
 .page {
-  max-width: 390px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 16px 14px 28px;
   color: #1c1714;
   font-family: Georgia, 'Times New Roman', serif;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.icon-link {
-  border: none;
-  background: transparent;
-  text-decoration: none;
-  color: #1c1714;
-  font-size: 24px;
-  line-height: 1;
-  width: 28px;
-  text-align: center;
-  cursor: pointer;
-}
-
-.brand-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.book-icon {
-  font-size: 15px;
-}
-
-.brand-text {
-  font-size: 38px;
-  line-height: 1;
 }
 
 .title {
@@ -123,7 +100,7 @@ function createAlbum() {
 .title h1 {
   margin-top: 16px;
   font-size: 58px;
-  line-height: 0.95;
+  line-height: 1.02;
   font-weight: 500;
 }
 
@@ -132,6 +109,24 @@ function createAlbum() {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.empty-state {
+  margin-top: 24px;
+  padding: 20px 16px;
+  border-radius: 16px;
+  background: #f5f2eb;
+  text-align: center;
+}
+
+.empty-state p:first-child {
+  font-size: 20px;
+}
+
+.empty-state p:last-child {
+  margin-top: 8px;
+  color: #6f6257;
+  font-style: italic;
 }
 
 .polaroid {
@@ -264,5 +259,20 @@ function createAlbum() {
   font-style: italic;
   font-size: 12px;
   color: #938578;
+}
+
+@media (min-width: 900px) {
+  .page {
+    padding: 28px 28px 40px;
+  }
+
+  .title h1 {
+    font-size: 72px;
+  }
+
+  .album-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+  }
 }
 </style>

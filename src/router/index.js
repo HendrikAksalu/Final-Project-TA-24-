@@ -15,27 +15,27 @@ const router = createRouter({
       component: HomePage,
     },
     {
-      path: '/register',
+      path: '/registreeru',
       name: 'register',
       component: RegisterPage,
     },
     {
-      path: '/login',
+      path: '/logi-sisse',
       name: 'login',
       component: LoginPage,
     },
     {
-      path: '/heritage',
+      path: '/parand',
       name: 'heritage',
       component: HeritagePage,
     },
     {
-      path: '/album',
+      path: '/albumid',
       name: 'album',
       component: AlbumPage,
     },
     {
-      path: '/memory',
+      path: '/malestus',
       name: 'memory',
       component: MemoryPage,
     },
