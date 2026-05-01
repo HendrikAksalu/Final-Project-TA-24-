@@ -445,4 +445,84 @@ h1 em {
     font-size: 24px;
   }
 }
+
+/* Force a clearly desktop-first composition on real desktop widths. */
+@media (min-width: 900px) {
+  .page {
+    max-width: 1500px;
+    padding: 42px 64px 72px;
+    display: grid;
+    grid-template-columns: minmax(360px, 430px) minmax(0, 1fr);
+    grid-template-areas:
+      'header header'
+      'photo intro'
+      'photo cta'
+      'photo features'
+      'footer footer';
+    gap: 32px 72px;
+    align-items: start;
+  }
+
+  .photo-card,
+  .intro,
+  .cta-box,
+  .feature-list,
+  .footer {
+    margin-top: 0;
+  }
+
+  .photo-card {
+    justify-content: flex-start;
+  }
+
+  .photo-frame {
+    width: min(100%, 430px);
+  }
+
+  .photo-placeholder {
+    height: 380px;
+  }
+
+  .intro {
+    text-align: left;
+  }
+
+  h1 {
+    font-size: clamp(68px, 5.4vw, 92px);
+    line-height: 0.92;
+    max-width: 860px;
+  }
+
+  .copy {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 700px;
+    font-size: 24px;
+  }
+
+  .cta-box {
+    text-align: left;
+    max-width: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 24px;
+    padding: 24px 28px;
+  }
+
+  .cta-box p {
+    margin-top: 0;
+    max-width: 320px;
+  }
+
+  .feature-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .feature-card {
+    min-height: 160px;
+    padding: 22px 24px;
+  }
+}
 </style>
