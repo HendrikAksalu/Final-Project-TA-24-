@@ -90,9 +90,9 @@ function logout() {
 
 <style scoped>
 .page {
-  max-width: 1120px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 20px 14px 28px;
+  padding: 20px 16px 34px;
   color: #1c1714;
   font-family: Georgia, 'Times New Roman', serif;
 }
@@ -224,7 +224,7 @@ h1 em {
   margin-top: 16px;
   font-style: italic;
   font-size: 13px;
-  color: #8b7d6f;
+  color: #6f6257;
 }
 
 .feature-list {
@@ -292,9 +292,9 @@ h1 em {
   color: #938578;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 560px) {
   .page {
-    padding: 28px 28px 40px;
+    padding: 32px 34px 46px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
@@ -303,7 +303,7 @@ h1 em {
       'photo cta'
       'features features'
       'footer footer';
-    gap: 24px 32px;
+    gap: 28px 36px;
     align-items: start;
   }
 
@@ -320,12 +320,12 @@ h1 em {
   }
 
   h1 {
-    font-size: 74px;
+    font-size: clamp(58px, 6.6vw, 78px);
   }
 
   .copy {
     max-width: 520px;
-    font-size: 20px;
+    font-size: 21px;
   }
 
   .cta-box {
@@ -335,6 +335,114 @@ h1 em {
   .feature-list {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
+  }
+
+  .footer {
+    margin-top: 64px;
+  }
+}
+
+@media (min-width: 860px) {
+  .page {
+    grid-template-columns: minmax(360px, 0.44fr) minmax(0, 0.56fr);
+    grid-template-areas:
+      'header header'
+      'photo intro'
+      'photo cta'
+      'features features'
+      'footer footer';
+    gap: 32px 58px;
+    padding: 40px 52px 62px;
+  }
+
+  .photo-card {
+    justify-content: flex-start;
+  }
+
+  .photo-frame {
+    width: min(100%, 460px);
+    padding: 12px 12px 18px;
+  }
+
+  .photo-placeholder {
+    height: 370px;
+  }
+
+  .intro {
+    text-align: left;
+  }
+
+  h1 {
+    max-width: 760px;
+    line-height: 0.93;
+  }
+
+  .copy {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 650px;
+    font-size: 23px;
+  }
+
+  .cta-box {
+    text-align: left;
+    max-width: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    padding: 24px 26px;
+  }
+
+  .cta-box p {
+    margin-top: 0;
+    max-width: 300px;
+  }
+
+  .feature-list {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin-top: 8px;
+  }
+
+  .feature-card {
+    min-height: 152px;
+    padding: 20px 22px;
+  }
+
+  .feature-card p {
+    margin-top: 10px;
+    font-size: 18px;
+    line-height: 1.45;
+  }
+
+  .footer {
+    margin-top: 74px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .page {
+    max-width: 1440px;
+    grid-template-columns: minmax(390px, 0.43fr) minmax(0, 0.57fr);
+    gap: 34px 72px;
+    padding: 44px 68px 70px;
+  }
+
+  .photo-frame {
+    width: min(100%, 500px);
+  }
+
+  .photo-placeholder {
+    height: 405px;
+  }
+
+  h1 {
+    font-size: clamp(72px, 5.2vw, 88px);
+  }
+
+  .copy {
+    max-width: 700px;
+    font-size: 24px;
   }
 }
 </style>

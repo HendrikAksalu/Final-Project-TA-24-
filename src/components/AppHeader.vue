@@ -123,7 +123,7 @@ defineEmits(['menu-click'])
   padding: 7px 12px;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 560px) {
   .icon-link,
   .left-spacer {
     width: 40px;
@@ -150,11 +150,12 @@ defineEmits(['menu-click'])
 
   .auth-links {
     gap: 14px;
-    font-size: 12px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
   }
 
   .auth-links .register {
-    padding: 9px 16px;
+    padding: 10px 18px;
   }
 }
 </style>
