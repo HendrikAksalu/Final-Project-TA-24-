@@ -378,7 +378,7 @@ watch(
   color: #938578;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .page {
     padding: 28px 28px 40px;
   }
@@ -406,6 +406,66 @@ watch(
     max-width: 760px;
     margin-left: auto;
     margin-right: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding: 34px 40px 52px;
+    display: grid;
+    grid-template-columns: minmax(300px, 0.44fr) minmax(0, 0.56fr);
+    grid-template-areas:
+      'header header'
+      'hero title'
+      'hero info'
+      'hero actions'
+      'footer footer';
+    gap: 22px 40px;
+    align-items: start;
+  }
+
+  .page > :first-child {
+    grid-area: header;
+  }
+
+  .hero-card {
+    grid-area: hero;
+    margin-top: 8px;
+    max-width: none;
+  }
+
+  .photo {
+    height: 560px;
+  }
+
+  .title {
+    grid-area: title;
+    margin-top: 8px;
+    text-align: left;
+  }
+
+  .story,
+  .story-editor {
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .info-list {
+    grid-area: info;
+    max-width: none;
+    margin: 0;
+  }
+
+  .actions {
+    grid-area: actions;
+    justify-content: flex-start;
+    margin-top: 0;
+  }
+
+  .footer {
+    grid-area: footer;
+    margin-top: 28px;
   }
 }
 </style>

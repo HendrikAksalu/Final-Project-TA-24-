@@ -1,4 +1,6 @@
 <script setup>
+import brandLogoSrc from '@/assets/logo.png'
+
 defineProps({
   backTo: {
     type: [String, Object],
@@ -27,10 +29,9 @@ defineEmits(['menu-click'])
         />
       </svg>
     </RouterLink>
-    <div v-else class="left-spacer" aria-hidden="true"></div>
 
     <div class="brand-wrap">
-      <img class="brand-logo" src="/logo.png" alt="Fototeek logo" />
+      <img class="brand-logo" :src="brandLogoSrc" alt="Fototeek logo" />
       <span class="brand-text">Fototeek</span>
     </div>
 

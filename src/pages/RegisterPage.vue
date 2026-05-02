@@ -286,7 +286,7 @@ async function onSubmit() {
   color: #938578;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .page {
     padding: 28px 28px 40px;
   }
@@ -312,6 +312,69 @@ async function onSubmit() {
     max-width: 680px;
     margin-left: auto;
     margin-right: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    display: grid;
+    grid-template-columns: minmax(300px, 0.42fr) minmax(0, 0.58fr);
+    grid-template-areas:
+      'header header'
+      'title title'
+      'photo form'
+      'signin signin'
+      'footer footer';
+    gap: 24px 44px;
+    padding: 34px 40px 52px;
+  }
+
+  .page > :first-child {
+    grid-area: header;
+  }
+
+  .title {
+    grid-area: title;
+    margin-top: 10px;
+  }
+
+  .stacked-photo {
+    grid-area: photo;
+    margin-top: 0;
+    height: 320px;
+  }
+
+  .polaroid {
+    width: 230px;
+    height: 288px;
+  }
+
+  .back {
+    top: 20px;
+  }
+
+  .front {
+    top: 36px;
+  }
+
+  .register-form {
+    grid-area: form;
+    max-width: none;
+    width: 100%;
+    margin: 0;
+    padding: 26px;
+    border-radius: 18px;
+    background: #f5f2eb;
+  }
+
+  .signin-line {
+    grid-area: signin;
+    margin-top: 0;
+  }
+
+  .footer {
+    grid-area: footer;
+    margin-top: 30px;
   }
 }
 </style>

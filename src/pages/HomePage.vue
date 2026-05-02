@@ -25,7 +25,7 @@ function logout() {
 </script>
 
 <template>
-  <main class="page">
+  <main class="page home-page">
     <div class="header-wrap">
       <AppHeader
         :show-auth-links="!isLoggedIn"
@@ -118,20 +118,6 @@ function logout() {
   margin-top: 0;
 }
 
-@media (min-width: 640px) {
-  .hero-left {
-    gap: 28px;
-    grid-area: hero-left;
-    align-self: start;
-  }
-
-  .hero-right {
-    gap: 14px;
-    grid-area: hero-right;
-    align-self: start;
-  }
-}
-
 .header-wrap {
   position: relative;
   grid-area: header;
@@ -201,16 +187,6 @@ function logout() {
 .intro {
   margin-top: 26px;
   text-align: center;
-}
-
-@media (min-width: 640px) {
-  .hero-left .photo-card {
-    margin-top: 0;
-  }
-
-  .hero-left .intro {
-    margin-top: 0;
-  }
 }
 
 .eyebrow {
@@ -349,137 +325,5 @@ h1 em {
   font-size: 13px;
   font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
   color: #655a52;
-}
-
-/* Two-column layout from small tablet up so typical laptop windows are not stuck in single column. */
-@media (min-width: 640px) {
-  .page {
-    padding: 32px 32px 48px;
-    display: grid;
-    grid-template-columns: minmax(0, 0.45fr) minmax(0, 0.55fr);
-    grid-template-areas:
-      'header header'
-      'hero-left hero-right'
-      'footer footer';
-    gap: 28px 40px;
-    align-items: start;
-  }
-
-  .footer {
-    margin-top: 56px;
-  }
-
-  .photo-card {
-    justify-content: flex-start;
-  }
-
-  .photo-frame {
-    width: min(100%, 250px);
-  }
-
-  .intro {
-    text-align: left;
-  }
-
-  .copy {
-    margin-left: 0;
-    margin-right: 0;
-    max-width: 22em;
-    font-size: clamp(17px, 1.9vw, 21px);
-  }
-
-  h1 {
-    font-size: clamp(44px, 5vw, 56px);
-    max-width: 12em;
-  }
-
-  .cta-box {
-    padding: 24px;
-    text-align: left;
-  }
-
-  .cta-box p {
-    margin-top: 12px;
-  }
-
-  .feature-card p {
-    font-size: 16px;
-  }
-}
-
-@media (min-width: 1200px) {
-  .page {
-    max-width: 1180px;
-    grid-template-columns: minmax(340px, 0.42fr) minmax(0, 0.58fr);
-    grid-template-areas:
-      'header header'
-      'hero-left hero-right'
-      'footer footer';
-    gap: 36px 56px;
-    padding: 36px 40px 64px;
-  }
-
-  .hero-left {
-    gap: 36px;
-  }
-
-  .hero-right {
-    gap: 16px;
-  }
-
-  .photo-frame {
-    width: min(100%, 280px);
-    padding: 14px 14px 20px;
-  }
-
-  .photo-placeholder {
-    height: 240px;
-  }
-
-  .intro {
-    text-align: left;
-  }
-
-  h1 {
-    max-width: 9em;
-    font-size: clamp(52px, 4.8vw, 68px);
-    line-height: 1.06;
-    font-weight: 600;
-  }
-
-  .copy {
-    max-width: 18em;
-    font-size: clamp(19px, 1.65vw, 24px);
-  }
-
-  .cta-box {
-    text-align: left;
-    padding: 26px 28px;
-  }
-
-  .cta-box p {
-    margin-top: 14px;
-    max-width: none;
-    font-size: 15px;
-  }
-
-  .feature-list {
-    gap: 16px;
-  }
-
-  .feature-card {
-    min-height: auto;
-    padding: 22px 26px;
-  }
-
-  .feature-card p {
-    margin-top: 10px;
-    font-size: clamp(17px, 1.25vw, 20px);
-    line-height: 1.5;
-  }
-
-  .footer {
-    margin-top: 64px;
-  }
 }
 </style>

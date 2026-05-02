@@ -376,7 +376,7 @@ function toggleFavorite(id) {
   color: #938578;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .page {
     padding: 28px 28px 40px;
   }

@@ -261,7 +261,7 @@ function createAlbum() {
   color: #938578;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .page {
     padding: 28px 28px 40px;
   }
@@ -273,6 +273,35 @@ function createAlbum() {
   .album-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 18px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page {
+    padding: 34px 40px 52px;
+  }
+
+  .title h1 {
+    font-size: 76px;
+  }
+
+  .album-grid {
+    margin-top: 30px;
+    grid-template-columns: repeat(4, minmax(210px, 1fr));
+    gap: 24px;
+  }
+
+  .photo {
+    height: 180px;
+  }
+
+  .create-btn {
+    width: auto;
+    min-width: 260px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 28px;
+    padding-right: 28px;
   }
 }
 </style>

@@ -1,0 +1,165 @@
+/*
+ * Home landing responsive layout lives here (not Vue scoped CSS) so it always loads
+ * in the correct order relative to Tailwind preflight via Laravel's @vite(css, js).
+ * Scoped SFC styles can load late on hard refresh and leave the hero in single-column stack.
+ */
+@media (min-width: 640px) {
+  body #app main.home-page.page {
+    padding: 32px 32px 48px;
+    display: grid !important;
+    grid-template-columns: minmax(0, 0.45fr) minmax(0, 0.55fr);
+    grid-template-areas:
+      'header header'
+      'hero-left hero-right'
+      'footer footer';
+    /* Column divider sits between hero columns (see hero-right border-left). */
+    gap: 28px 0;
+    align-items: start;
+  }
+
+  body #app main.home-page.page .hero-left {
+    gap: 28px;
+    grid-area: hero-left;
+    align-self: start;
+    padding-right: clamp(24px, 4vw, 44px);
+  }
+
+  body #app main.home-page.page .hero-right {
+    gap: 14px;
+    grid-area: hero-right;
+    align-self: start;
+    border-left: 1px solid #ded7cb;
+    padding-left: clamp(24px, 4vw, 44px);
+  }
+
+  body #app main.home-page.page .cta-box {
+    margin-top: 0;
+  }
+
+  body #app main.home-page.page .footer {
+    margin-top: 56px;
+  }
+
+  body #app main.home-page.page .hero-left .photo-card {
+    margin-top: 0;
+  }
+
+  body #app main.home-page.page .hero-left .intro {
+    margin-top: 0;
+  }
+
+  body #app main.home-page.page .photo-card {
+    justify-content: flex-start;
+  }
+
+  body #app main.home-page.page .photo-frame {
+    width: min(100%, 250px);
+  }
+
+  body #app main.home-page.page .intro {
+    text-align: left;
+  }
+
+  body #app main.home-page.page .copy {
+    margin-left: 0;
+    margin-right: 0;
+    max-width: 22em;
+    font-size: clamp(17px, 1.9vw, 21px);
+  }
+
+  body #app main.home-page.page h1 {
+    font-size: clamp(44px, 5vw, 56px);
+    max-width: 12em;
+  }
+
+  body #app main.home-page.page .cta-box {
+    padding: 24px;
+    text-align: left;
+  }
+
+  body #app main.home-page.page .cta-box p {
+    margin-top: 12px;
+  }
+
+  body #app main.home-page.page .feature-card p {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1200px) {
+  body #app main.home-page.page {
+    max-width: 1180px;
+    grid-template-columns: minmax(340px, 0.42fr) minmax(0, 0.58fr);
+    grid-template-areas:
+      'header header'
+      'hero-left hero-right'
+      'footer footer';
+    gap: 36px 0;
+    padding: 36px 40px 64px;
+  }
+
+  body #app main.home-page.page .hero-left {
+    gap: 36px;
+    padding-right: clamp(40px, 4.5vw, 56px);
+  }
+
+  body #app main.home-page.page .hero-right {
+    gap: 16px;
+    padding-left: clamp(40px, 4.5vw, 56px);
+  }
+
+  body #app main.home-page.page .photo-frame {
+    width: min(100%, 280px);
+    padding: 14px 14px 20px;
+  }
+
+  body #app main.home-page.page .photo-placeholder {
+    height: 240px;
+  }
+
+  body #app main.home-page.page .intro {
+    text-align: left;
+  }
+
+  body #app main.home-page.page h1 {
+    max-width: 9em;
+    font-size: clamp(52px, 4.8vw, 68px);
+    line-height: 1.06;
+    font-weight: 600;
+  }
+
+  body #app main.home-page.page .copy {
+    max-width: 18em;
+    font-size: clamp(19px, 1.65vw, 24px);
+  }
+
+  body #app main.home-page.page .cta-box {
+    text-align: left;
+    padding: 26px 28px;
+  }
+
+  body #app main.home-page.page .cta-box p {
+    margin-top: 14px;
+    max-width: none;
+    font-size: 15px;
+  }
+
+  body #app main.home-page.page .feature-list {
+    gap: 16px;
+  }
+
+  body #app main.home-page.page .feature-card {
+    min-height: auto;
+    padding: 22px 26px;
+  }
+
+  body #app main.home-page.page .feature-card p {
+    margin-top: 10px;
+    font-size: clamp(17px, 1.25vw, 20px);
+    line-height: 1.5;
+  }
+
+  body #app main.home-page.page .footer {
+    margin-top: 64px;
+  }
+}

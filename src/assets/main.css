@@ -1,4 +1,5 @@
 @import './base.css';
+@import './home-page-layout.css';
 
 #app {
   width: 100%;
