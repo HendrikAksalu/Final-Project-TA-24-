@@ -5,10 +5,13 @@
 }
 
 :root {
-  --paper-bg: #e9e6de;
+  --paper-bg: #f5f2eb;
+  --ink: #231f20;
+  --font-serif: 'EB Garamond', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
   background: var(--paper-bg);
-  color: #1c1714;
+  color: var(--ink);
 }

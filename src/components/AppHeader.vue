@@ -62,7 +62,7 @@ defineEmits(['menu-click'])
   border: none;
   background: transparent;
   text-decoration: none;
-  color: #1c1714;
+  color: var(--ink, #231f20);
   width: 32px;
   height: 32px;
   display: inline-flex;
@@ -97,6 +97,7 @@ defineEmits(['menu-click'])
 }
 
 .brand-text {
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
   font-size: 18px;
   line-height: 1;
 }
@@ -107,18 +108,18 @@ defineEmits(['menu-click'])
   gap: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans, 'Inter', sans-serif);
   font-size: 11px;
 }
 
 .auth-links a {
-  color: #1c1714;
+  color: var(--ink, #231f20);
   text-decoration: none;
 }
 
 .auth-links .register {
-  background: #1e130c;
-  color: #f8f5ee;
+  background: #231f20;
+  color: #faf8f5;
   border-radius: 999px;
   padding: 8px 14px;
 }
