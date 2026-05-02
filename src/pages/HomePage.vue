@@ -100,30 +100,35 @@ function logout() {
   font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
 }
 
+/* Real wrappers (avoid display: contents — more reliable grid + avoids Safari quirks). */
 .hero-left {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 .hero-right {
-  display: contents;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.hero-right .feature-list {
+  margin-top: 0;
 }
 
 @media (min-width: 640px) {
   .hero-left {
-    display: flex;
-    flex-direction: column;
     gap: 28px;
     grid-area: hero-left;
     align-self: start;
   }
 
   .hero-right {
-    display: flex;
-    flex-direction: column;
     gap: 14px;
     grid-area: hero-right;
     align-self: start;
-    min-width: 0;
   }
 }
 
@@ -247,16 +252,6 @@ h1 em {
   padding: 22px 20px 20px;
   text-align: center;
   box-shadow: 0 2px 18px rgba(35, 31, 32, 0.07);
-}
-
-@media (min-width: 640px) {
-  .hero-right .cta-box {
-    margin-top: 0;
-  }
-
-  .hero-right .feature-list {
-    margin-top: 0;
-  }
 }
 
 .cta-button {

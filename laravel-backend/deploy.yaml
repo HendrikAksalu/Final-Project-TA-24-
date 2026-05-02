@@ -1,0 +1,42 @@
+import:
+    - recipe/laravel.php
+
+config:
+    repository: 'git@github.com:HendrikAksalu/Final-Project-TA-24-.git'
+    keep_releases: 2
+
+hosts:
+    stage:
+        hostname: 'ta24aksalu.itmajakas.ee'
+        http_user: virt137753
+        remote_user: virt137753
+        deploy_path: '~/domeenid/www.ta24aksalu.itmajakas.ee/fototeek'
+        identity_file: '~/.ssh/id_ed25519'
+        env:
+            GIT_SSH_COMMAND: 'ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new'
+
+tasks:
+    npm:production:
+        # Frontend source lives under ../src ; Laravel+Vite emits to public/build/hot + manifest here.
+        # npm install (not ci) so the tree still resolves if package-lock is behind package.json.
+        - run: 'cd {{release_path}}/laravel-backend && npm install --no-audit --no-fund'
+        - run: 'cd {{release_path}}/laravel-backend && npm run build'
+
+    opcache:clear:
+        - run: killall php84-cgi || true
+
+    deploy:
+        - 'deploy:prepare'
+        - 'deploy:vendors'
+        - 'npm:production'
+        - 'artisan:migrate'
+        - 'artisan:storage:link'
+        - 'artisan:optimize:clear'
+        - 'artisan:optimize'
+        - 'deploy:publish'
+
+after:
+    deploy:failed: deploy:unlock
+
+before:
+    deploy:success: opcache:clear
