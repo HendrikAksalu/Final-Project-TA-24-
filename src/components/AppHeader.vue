@@ -87,28 +87,28 @@ defineEmits(['menu-click'])
 .brand-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .brand-logo {
-  width: 28px;
-  height: 28px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
 }
 
 .brand-text {
-  font-size: 30px;
+  font-size: 18px;
   line-height: 1;
 }
 
 .auth-links {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   font-family: Arial, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
 }
 
 .auth-links a {
@@ -120,38 +120,62 @@ defineEmits(['menu-click'])
   background: #1e130c;
   color: #f8f5ee;
   border-radius: 999px;
-  padding: 7px 12px;
+  padding: 8px 14px;
 }
 
-@media (min-width: 560px) {
+@media (min-width: 768px) {
   .icon-link,
   .left-spacer {
-    width: 40px;
-    height: 40px;
+    width: 34px;
+    height: 34px;
   }
 
   .icon-link {
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .icon-link svg {
-    width: 34px;
-    height: 34px;
+    width: 28px;
+    height: 28px;
   }
 
   .brand-logo {
-    width: 34px;
-    height: 34px;
+    width: 24px;
+    height: 24px;
   }
 
   .brand-text {
-    font-size: 46px;
+    font-size: 22px;
   }
 
   .auth-links {
-    gap: 14px;
-    font-size: 13px;
+    gap: 16px;
+    font-size: 12px;
     letter-spacing: 0.08em;
+  }
+
+  .auth-links .register {
+    padding: 9px 16px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .brand-wrap {
+    gap: 12px;
+  }
+
+  .brand-logo {
+    width: 26px;
+    height: 26px;
+  }
+
+  .brand-text {
+    font-size: 24px;
+  }
+
+  .auth-links {
+    gap: 18px;
+    font-size: 13px;
   }
 
   .auth-links .register {

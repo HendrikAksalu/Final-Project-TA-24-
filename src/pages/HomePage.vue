@@ -90,7 +90,7 @@ function logout() {
 
 <style scoped>
 .page {
-  max-width: 1320px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 20px 16px 34px;
   color: #1c1714;
@@ -143,7 +143,7 @@ function logout() {
 }
 
 .photo-frame {
-  width: 203px;
+  width: min(100%, 220px);
   background: #f3f0e8;
   box-shadow: 0 6px 16px rgba(20, 12, 8, 0.14);
   border-radius: 2px;
@@ -178,8 +178,8 @@ function logout() {
 }
 
 h1 {
-  font-size: 52px;
-  line-height: 0.96;
+  font-size: clamp(42px, 11vw, 54px);
+  line-height: 0.95;
   font-weight: 500;
 }
 
@@ -191,23 +191,24 @@ h1 em {
 
 .copy {
   margin: 14px auto 0;
-  max-width: 290px;
+  max-width: 360px;
   font-style: italic;
   color: #3e322a;
   line-height: 1.35;
+  font-size: clamp(22px, 5.2vw, 28px);
 }
 
 .cta-box {
   margin-top: 24px;
-  background: #f5f2eb;
+  background: #f8f6f1;
   border-radius: 18px;
-  padding: 22px 16px 20px;
+  padding: 20px 16px 18px;
   text-align: center;
   grid-area: cta;
 }
 
 .cta-button {
-  display: inline-block;
+  display: block;
   background: #1e130c;
   color: #f8f5ee;
   border-radius: 999px;
@@ -217,6 +218,7 @@ h1 em {
   font-size: 12px;
   font-family: Arial, sans-serif;
   font-weight: 700;
+  min-height: 48px;
   padding: 15px 26px;
 }
 
@@ -230,14 +232,14 @@ h1 em {
 .feature-list {
   margin-top: 18px;
   display: grid;
-  gap: 11px;
+  gap: 12px;
   grid-area: features;
 }
 
 .feature-card {
-  background: #f5f2eb;
+  background: #f8f6f1;
   border-radius: 18px;
-  padding: 15px 18px;
+  padding: 18px 20px;
 }
 
 .feature-card h2 {
@@ -249,16 +251,19 @@ h1 em {
 }
 
 .feature-card p {
-  margin-top: 6px;
+  margin-top: 8px;
   font-style: italic;
   color: #4f443c;
-  line-height: 1.3;
+  line-height: 1.35;
+  font-size: clamp(30px, 7.2vw, 38px);
 }
 
 .footer {
   margin-top: 44px;
   text-align: center;
   grid-area: footer;
+  border-top: 1px solid #ded7cb;
+  padding-top: 24px;
 }
 
 .footer nav {
@@ -282,28 +287,27 @@ h1 em {
   letter-spacing: 0.11em;
   font-size: 9px;
   font-family: Arial, sans-serif;
-  color: #7f7266;
+  color: #6f6358;
 }
 
 .note {
   margin-top: 8px;
   font-style: italic;
   font-size: 12px;
-  color: #938578;
+  color: #74685d;
 }
 
-@media (min-width: 560px) {
+@media (min-width: 768px) {
   .page {
-    padding: 32px 34px 46px;
+    padding: 32px 32px 48px;
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 0.45fr) minmax(0, 0.55fr);
     grid-template-areas:
       'header header'
-      'photo intro'
       'photo cta'
-      'features features'
+      'intro features'
       'footer footer';
-    gap: 28px 36px;
+    gap: 24px;
     align-items: start;
   }
 
@@ -316,159 +320,38 @@ h1 em {
   }
 
   .photo-frame {
-    width: min(100%, 380px);
+    width: min(100%, 250px);
   }
 
   h1 {
-    font-size: clamp(58px, 6.6vw, 78px);
+    font-size: clamp(64px, 8vw, 72px);
   }
 
   .copy {
     max-width: 520px;
-    font-size: 21px;
+    font-size: clamp(32px, 4vw, 36px);
   }
 
   .cta-box {
-    max-width: 520px;
-  }
-
-  .feature-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
+    padding: 24px;
   }
 
   .footer {
-    margin-top: 64px;
-  }
-}
-
-@media (min-width: 860px) {
-  .page {
-    grid-template-columns: minmax(360px, 0.44fr) minmax(0, 0.56fr);
-    grid-template-areas:
-      'header header'
-      'photo intro'
-      'photo cta'
-      'features features'
-      'footer footer';
-    gap: 32px 58px;
-    padding: 40px 52px 62px;
-  }
-
-  .photo-card {
-    justify-content: flex-start;
-  }
-
-  .photo-frame {
-    width: min(100%, 460px);
-    padding: 12px 12px 18px;
-  }
-
-  .photo-placeholder {
-    height: 370px;
-  }
-
-  .intro {
-    text-align: left;
-  }
-
-  h1 {
-    max-width: 760px;
-    line-height: 0.93;
-  }
-
-  .copy {
-    margin-left: 0;
-    margin-right: 0;
-    max-width: 650px;
-    font-size: 23px;
-  }
-
-  .cta-box {
-    text-align: left;
-    max-width: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 20px;
-    padding: 24px 26px;
-  }
-
-  .cta-box p {
-    margin-top: 0;
-    max-width: 300px;
-  }
-
-  .feature-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    margin-top: 8px;
-  }
-
-  .feature-card {
-    min-height: 152px;
-    padding: 20px 22px;
-  }
-
-  .feature-card p {
-    margin-top: 10px;
-    font-size: 18px;
-    line-height: 1.45;
-  }
-
-  .footer {
-    margin-top: 74px;
+    margin-top: 56px;
   }
 }
 
 @media (min-width: 1200px) {
   .page {
-    max-width: 1440px;
-    grid-template-columns: minmax(390px, 0.43fr) minmax(0, 0.57fr);
-    gap: 34px 72px;
-    padding: 44px 68px 70px;
-  }
-
-  .photo-frame {
-    width: min(100%, 500px);
-  }
-
-  .photo-placeholder {
-    height: 405px;
-  }
-
-  h1 {
-    font-size: clamp(72px, 5.2vw, 88px);
-  }
-
-  .copy {
-    max-width: 700px;
-    font-size: 24px;
-  }
-}
-
-/* Force a clearly desktop-first composition on real desktop widths. */
-@media (min-width: 900px) {
-  .page {
-    max-width: 1500px;
-    padding: 42px 64px 72px;
-    display: grid;
-    grid-template-columns: minmax(360px, 430px) minmax(0, 1fr);
+    max-width: 1320px;
+    grid-template-columns: minmax(360px, 0.43fr) minmax(0, 0.57fr);
     grid-template-areas:
       'header header'
-      'photo intro'
       'photo cta'
-      'photo features'
+      'intro features'
       'footer footer';
-    gap: 32px 72px;
-    align-items: start;
-  }
-
-  .photo-card,
-  .intro,
-  .cta-box,
-  .feature-list,
-  .footer {
-    margin-top: 0;
+    gap: 30px 64px;
+    padding: 40px 48px 64px;
   }
 
   .photo-card {
@@ -476,53 +359,67 @@ h1 em {
   }
 
   .photo-frame {
-    width: min(100%, 430px);
+    width: min(100%, 320px);
+    padding: 12px 12px 18px;
   }
 
   .photo-placeholder {
-    height: 380px;
+    height: 260px;
   }
 
   .intro {
     text-align: left;
+    margin-top: 0;
   }
 
   h1 {
-    font-size: clamp(68px, 5.4vw, 92px);
+    max-width: 620px;
+    font-size: clamp(72px, 6vw, 86px);
     line-height: 0.92;
-    max-width: 860px;
   }
 
   .copy {
     margin-left: 0;
     margin-right: 0;
-    max-width: 700px;
-    font-size: 24px;
+    max-width: 520px;
+    font-size: clamp(32px, 2.2vw, 38px);
   }
 
   .cta-box {
     text-align: left;
-    max-width: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 24px;
     padding: 24px 28px;
   }
 
   .cta-box p {
-    margin-top: 0;
-    max-width: 320px;
+    margin-top: 16px;
+    max-width: none;
   }
 
   .feature-list {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
+    margin-top: 0;
+    gap: 14px;
+    padding-left: 28px;
+    border-left: 1px solid #ded7cb;
+  }
+
+  .cta-box {
+    margin-top: 0;
+    margin-left: 28px;
   }
 
   .feature-card {
-    min-height: 160px;
+    min-height: 134px;
     padding: 22px 24px;
+  }
+
+  .feature-card p {
+    margin-top: 10px;
+    font-size: clamp(42px, 3vw, 50px);
+    line-height: 1.15;
+  }
+
+  .footer {
+    margin-top: 64px;
   }
 }
 </style>
