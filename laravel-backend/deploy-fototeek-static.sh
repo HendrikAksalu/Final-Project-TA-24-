@@ -46,6 +46,7 @@ const cssFromJs = jsEntry?.css?.[0];
 if (!cssEntry || !jsFile || !cssFromJs) {
   throw new Error('Unexpected manifest shape — check resources/css/app.css and resources/js/app.js entries');
 }
+const fp = [cssEntry, cssFromJs, jsFile].join('|');
 const html = \`<!DOCTYPE html>
 <html lang=\"et\">
 <head>
@@ -55,16 +56,75 @@ const html = \`<!DOCTYPE html>
   <meta http-equiv=\"Pragma\" content=\"no-cache\" />
   <meta http-equiv=\"Expires\" content=\"0\" />
   <title>Fototeek</title>
+  <!-- fototeek-build:\${fp} -->
+  <style>html,body{margin:0;min-height:100vh;background:#f5f2ee}</style>
   <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
   <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
   <link href=\"https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..1,800&family=Inter:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
   <link rel=\"icon\" type=\"image/png\" href=\"/logo.png\">
-  <link rel=\"stylesheet\" crossorigin href=\"/\${cssEntry}\">
-  <link rel=\"stylesheet\" crossorigin href=\"/\${cssFromJs}\">
 </head>
 <body>
   <div id=\"app\"></div>
-  <script type=\"module\" crossorigin src=\"/\${jsFile}\"></script>
+  <script>
+(function(){
+  function stripCb(){
+    try{
+      var u=new URL(location.href);
+      if(u.searchParams.has('_cb')){
+        u.searchParams.delete('_cb');
+        history.replaceState({},'',u.pathname+u.search+u.hash);
+      }
+    }catch(e){}
+  }
+  function boot(){
+    var h=document.head;
+    var l1=document.createElement('link');
+    l1.rel='stylesheet';
+    l1.crossOrigin='anonymous';
+    l1.href='/\${cssEntry}';
+    h.appendChild(l1);
+    var l2=document.createElement('link');
+    l2.rel='stylesheet';
+    l2.crossOrigin='anonymous';
+    l2.href='/\${cssFromJs}';
+    h.appendChild(l2);
+    var s=document.createElement('script');
+    s.type='module';
+    s.crossOrigin='anonymous';
+    s.src='/\${jsFile}';
+    document.body.appendChild(s);
+  }
+  function fpFromDoc(html){
+    var m=html.match(/<!-- fototeek-build:([^>]+) -->/);
+    return m&&m[1];
+  }
+  var mine=fpFromDoc(document.documentElement.innerHTML);
+  fetch(location.pathname+location.search,{cache:'no-store',credentials:'same-origin'})
+    .then(function(r){return r.text();})
+    .then(function(ht){
+      var remote=fpFromDoc(ht);
+      if(remote && mine && remote!==mine){
+        var u=new URL(location.href);
+        if(!u.searchParams.has('_cb')){
+          u.searchParams.set('_cb',String(Date.now()));
+          location.replace(u.toString());
+          return;
+        }
+      }
+      if(remote && !mine){
+        var u2=new URL(location.href);
+        if(!u2.searchParams.has('_cb')){
+          u2.searchParams.set('_cb',String(Date.now()));
+          location.replace(u2.toString());
+          return;
+        }
+      }
+      stripCb();
+      boot();
+    })
+    .catch(function(){stripCb();boot();});
+})();
+  <\/script>
 </body>
 </html>
 \`;
@@ -84,4 +144,4 @@ echo "Uploading index.html (both shells) ..."
 scp "${SCP_OPTS[@]}" "$TMP_INDEX" "${HOST}:${REMOTE_BASE}/current/public/index.html"
 scp "${SCP_OPTS[@]}" "$TMP_INDEX" "${HOST}:${REMOTE_BASE}/index.html"
 
-echo "Done. Hard-refresh the site once (Ctrl+Shift+R / Cmd+Shift+R)."
+echo "Done. Open / reload normally — shell auto-fixes stale cached HTML when deploy fingerprints differ."
