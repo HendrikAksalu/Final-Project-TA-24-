@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # One command: build + upload Fototeek (uses Linux Node via nvm — avoids Windows npm issues).
-set -euo pipefail
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -9,24 +9,26 @@ echo "=== Fototeek deploy (from $(pwd)) ==="
 
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
 if [[ -s "$NVM_DIR/nvm.sh" ]]; then
+  echo "Loading nvm from $NVM_DIR ..."
+  # nvm.sh is not compatible with bash -u (nounset); disable for load + nvm commands.
+  set +u
   # shellcheck source=/dev/null
   . "$NVM_DIR/nvm.sh"
   if [[ -f .nvmrc ]]; then
     v="$(tr -d '\r\n' < .nvmrc)"
     echo "Using .nvmrc → Node $v"
-    nvm install "$v" >/dev/null 2>&1 || true
-    nvm use "$v" || {
-      echo "ERROR: nvm could not switch to Node $v (from .nvmrc)." >&2
-      echo "Install it with: nvm install $v" >&2
-      exit 1
-    }
+    echo "(If this is the first run, installing Node can take 1–2 minutes.)"
+    nvm install "$v"
+    nvm use "$v"
   else
-    nvm use || {
-      echo "ERROR: nvm use failed. Install Node from laravel-backend/.nvmrc or fix nvm." >&2
-      exit 1
-    }
+    nvm use
   fi
+  set -u
+else
+  echo "No nvm ($NVM_DIR/nvm.sh missing) — using node/npm already on your PATH."
 fi
+
+set -euo pipefail
 
 command -v node >/dev/null || {
   echo "ERROR: node not found in PATH. Install Node 20.19+ or use nvm." >&2
