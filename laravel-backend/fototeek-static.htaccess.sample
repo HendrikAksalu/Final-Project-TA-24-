@@ -1,0 +1,20 @@
+# Copy into ZoneOS docroot for Fototeek (same folder as fototeek/assets/, fototeek/current/).
+# Keeps hashed JS/CSS cacheable while preventing the SPA shell (HTML) from sticking in browsers.
+
+RewriteEngine On
+
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^ current/public/index.html [L]
+
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ current/public/index.html [L]
+
+FileETag None
+
+<IfModule mod_headers.c>
+  Header always set Cache-Control "private, no-store, no-cache, must-revalidate, max-age=0" "expr=%{CONTENT_TYPE} =~ m#text/html#"
+  Header always set Pragma "no-cache" "expr=%{CONTENT_TYPE} =~ m#text/html#"
+  Header always set Expires "Wed, 11 Jan 1984 05:00:00 GMT" "expr=%{CONTENT_TYPE} =~ m#text/html#"
+  Header always unset Last-Modified "expr=%{CONTENT_TYPE} =~ m#text/html#"
+</IfModule>
