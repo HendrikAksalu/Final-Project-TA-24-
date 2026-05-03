@@ -98,8 +98,10 @@ const html = \`<!DOCTYPE html>
     var m=html.match(/<!-- fototeek-build:([^>]+) -->/);
     return m&&m[1];
   }
+  window.addEventListener('pageshow',function(ev){if(ev.persisted){location.reload();}});
   var mine=fpFromDoc(document.documentElement.innerHTML);
-  fetch(location.pathname+location.search,{cache:'no-store',credentials:'same-origin'})
+  var verifyUrl='/__fototeek_shell/'+Date.now();
+  fetch(verifyUrl,{cache:'no-store',credentials:'same-origin',headers:{'Cache-Control':'no-cache','Pragma':'no-cache'}})
     .then(function(r){return r.text();})
     .then(function(ht){
       var remote=fpFromDoc(ht);
