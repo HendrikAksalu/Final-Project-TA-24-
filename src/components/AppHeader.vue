@@ -30,10 +30,10 @@ defineEmits(['menu-click'])
       </svg>
     </RouterLink>
 
-    <div class="brand-wrap">
-      <img class="brand-logo" :src="brandLogoSrc" alt="Fototeek logo" />
-      <span class="brand-text">Fototeek</span>
-    </div>
+    <RouterLink to="/" class="brand-link" aria-label="Fototeek avaleht">
+      <img class="brand-logo" :src="brandLogoSrc" alt="" width="112" height="114" />
+      <span class="brand-text" aria-hidden="true">Fototeek</span>
+    </RouterLink>
 
     <nav v-if="showAuthLinks" class="auth-links">
       <RouterLink to="/logi-sisse">Logi sisse</RouterLink>
@@ -85,16 +85,19 @@ defineEmits(['menu-click'])
   height: 32px;
 }
 
-.brand-wrap {
+.brand-link {
   display: flex;
   align-items: center;
   gap: 10px;
+  text-decoration: none;
+  color: inherit;
 }
 
 .brand-logo {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   object-fit: contain;
+  flex-shrink: 0;
 }
 
 .brand-text {
@@ -142,8 +145,8 @@ defineEmits(['menu-click'])
   }
 
   .brand-logo {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
   }
 
   .brand-text {
@@ -162,13 +165,13 @@ defineEmits(['menu-click'])
 }
 
 @media (min-width: 1200px) {
-  .brand-wrap {
+  .brand-link {
     gap: 12px;
   }
 
   .brand-logo {
-    width: 26px;
-    height: 26px;
+    width: 30px;
+    height: 30px;
   }
 
   .brand-text {
