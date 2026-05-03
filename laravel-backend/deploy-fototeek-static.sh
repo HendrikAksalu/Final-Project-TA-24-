@@ -42,8 +42,9 @@ const cssFromJs = jsEntry?.css?.[0];
 if (!cssEntry || !jsFile || !cssFromJs) {
   throw new Error('Unexpected manifest shape — check resources/css/app.css and resources/js/app.js entries');
 }
+const buildMark = String(Date.now()) + '-' + jsFile.replace(/[^a-zA-Z0-9._-]/g, '');
 const htmlInner = \`<!DOCTYPE html>
-<html lang=\"et\">
+<html lang=\"et\" data-fototeek-build=\"\${buildMark}\">
 <head>
   <meta charset=\"UTF-8\">
   <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
@@ -56,13 +57,13 @@ const htmlInner = \`<!DOCTYPE html>
   <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
   <link href=\"https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..1,800&family=Inter:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
   <link rel=\"icon\" type=\"image/png\" href=\"/logo.png\">
-  <link rel=\"stylesheet\" crossorigin href=\"/\${cssEntry}\">
-  <link rel=\"stylesheet\" crossorigin href=\"/\${cssFromJs}\">
+  <link rel=\"stylesheet\" href=\"/\${cssEntry}\">
+  <link rel=\"stylesheet\" href=\"/\${cssFromJs}\">
 </head>
 <body>
   <div id=\"app\"></div>
   <script>window.addEventListener('pageshow',function(e){if(e.persisted)location.reload();});</script>
-  <script type=\"module\" crossorigin src=\"/\${jsFile}\"></script>
+  <script type=\"module\" src=\"/\${jsFile}\"></script>
 </body>
 </html>\`;
 
@@ -72,6 +73,7 @@ header('Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0')
 header('Pragma: no-cache');
 header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
 header('Content-Type: text/html; charset=UTF-8');
+header('X-Fototeek-Shell: ' . gmdate('c'));
 echo <<<'FOTOTEEK_SHELL_EOF'
 \${htmlInner}
 FOTOTEEK_SHELL_EOF
