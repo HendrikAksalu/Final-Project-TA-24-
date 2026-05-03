@@ -22,10 +22,6 @@ if (!cssEntry || !jsFile || !cssFromJs) {
 const buildMark = `${Date.now()}-${jsFile.replace(/[^a-zA-Z0-9._-]/g, '')}`;
 const staticV = String(Date.now());
 
-const diagStrip = `<div id="fototeek-live-strip" style="background:#1a1512;color:#f5f2ee;text-align:center;padding:9px 14px;font:600 11px/1.35 system-ui,-apple-system,sans-serif;letter-spacing:.04em;">
-  Fototeek · <strong>live PHP shell</strong>. If you do <em>not</em> see this dark bar, your browser is showing an old saved page — try Incognito or clear site data for this domain.
-</div>`;
-
 const commonHead = `<!DOCTYPE html>
 <html lang="et" data-fototeek-build="${buildMark}">
 <head>
@@ -43,7 +39,6 @@ const commonHead = `<!DOCTYPE html>
 `;
 
 const commonTail = `
-${diagStrip}
 <div id="app"></div>
 <script>
 if ('serviceWorker' in navigator) {
