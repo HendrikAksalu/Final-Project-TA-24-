@@ -1,15 +1,20 @@
-# Copy into ZoneOS docroot for Fototeek (same folder as fototeek/assets/, fototeek/current/).
-# Keeps hashed JS/CSS cacheable while preventing the SPA shell (HTML) from sticking in browsers.
+# ZoneOS / Fototeek docroot — route SPA through PHP shell (index.php) so HTML is not aggressively cached.
+# Copy to: ~/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/.htaccess
 
 RewriteEngine On
 
-RewriteCond %{REQUEST_URI} ^/$
-RewriteRule ^ current/public/index.html [L]
+DirectoryIndex index.php index.html
 
+# Homepage → PHP shell (fresh Cache-Control every request).
+RewriteCond %{REQUEST_URI} ^/$
+RewriteRule ^ current/public/index.php [L]
+
+# Client-side routes → same PHP shell.
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^ current/public/index.html [L]
+RewriteRule ^ current/public/index.php [L]
 
+# Hashed Vite assets stay cache-friendly (filenames change each build).
 FileETag None
 
 <IfModule mod_headers.c>
