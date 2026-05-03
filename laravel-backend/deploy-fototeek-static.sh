@@ -32,58 +32,7 @@ TMP_HTML="$(mktemp)"
 TMP_PHP="$(mktemp)"
 trap 'rm -f "$TMP_HTML" "$TMP_PHP"' EXIT
 
-node --input-type=module -e "
-import { readFileSync, writeFileSync } from 'node:fs';
-const m = JSON.parse(readFileSync('public/build/manifest.json', 'utf8'));
-const cssEntry = m['resources/css/app.css']?.file;
-const jsEntry = m['resources/js/app.js'];
-const jsFile = jsEntry?.file;
-const cssFromJs = jsEntry?.css?.[0];
-if (!cssEntry || !jsFile || !cssFromJs) {
-  throw new Error('Unexpected manifest shape — check resources/css/app.css and resources/js/app.js entries');
-}
-const buildMark = String(Date.now()) + '-' + jsFile.replace(/[^a-zA-Z0-9._-]/g, '');
-const htmlInner = \`<!DOCTYPE html>
-<html lang=\"et\" data-fototeek-build=\"\${buildMark}\">
-<head>
-  <meta charset=\"UTF-8\">
-  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-  <meta http-equiv=\"Cache-Control\" content=\"no-cache, no-store, must-revalidate\" />
-  <meta http-equiv=\"Pragma\" content=\"no-cache\" />
-  <meta http-equiv=\"Expires\" content=\"0\" />
-  <title>Fototeek</title>
-  <style>html,body{margin:0;min-height:100vh;background:#f5f2ee}</style>
-  <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
-  <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin>
-  <link href=\"https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400..800;1,400..1,800&family=Inter:wght@400;500;600;700&display=swap\" rel=\"stylesheet\">
-  <link rel=\"icon\" type=\"image/png\" href=\"/logo.png\">
-  <link rel=\"stylesheet\" href=\"/\${cssEntry}\">
-  <link rel=\"stylesheet\" href=\"/\${cssFromJs}\">
-</head>
-<body>
-  <div id=\"app\"></div>
-  <script>window.addEventListener('pageshow',function(e){if(e.persisted)location.reload();});</script>
-  <script type=\"module\" src=\"/\${jsFile}\"></script>
-</body>
-</html>\`;
-
-const phpOut = \`<?php
-declare(strict_types=1);
-header('Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0');
-header('Pragma: no-cache');
-header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
-header('Content-Type: text/html; charset=UTF-8');
-header('X-Fototeek-Shell: ' . gmdate('c'));
-echo <<<'FOTOTEEK_SHELL_EOF'
-\${htmlInner}
-FOTOTEEK_SHELL_EOF
-;
-\`;
-
-writeFileSync(process.argv[1], htmlInner);
-writeFileSync(process.argv[2], phpOut);
-console.log('Generated shell:', { cssEntry, cssFromJs, jsFile });
-" "$TMP_HTML" "$TMP_PHP"
+node scripts/generate-fototeek-shell.mjs "$TMP_HTML" "$TMP_PHP"
 
 SCP_OPTS=(-i "$KEY" -o StrictHostKeyChecking=accept-new)
 
