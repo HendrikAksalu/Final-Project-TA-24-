@@ -3,6 +3,16 @@
  * in the correct order relative to Tailwind preflight via Laravel's @vite(css, js).
  * Scoped SFC styles can load late on hard refresh and leave the hero in single-column stack.
  */
+
+/* Mobile + desktop: tinted stack behind CTA + feature cards (mockup); not only from 640px up. */
+body #app main.home-page.page .hero-right {
+  margin-top: 8px;
+  padding: 18px 16px 22px;
+  background: #faf8f4;
+  border-radius: 22px;
+  border: 1px solid rgba(222, 215, 203, 0.85);
+}
+
 @media (min-width: 640px) {
   body #app main.home-page.page {
     padding: 32px 32px 48px;
@@ -28,10 +38,8 @@
     gap: 14px;
     grid-area: hero-right;
     align-self: start;
+    margin-top: 0;
     padding: 22px 24px 26px;
-    background: #faf8f4;
-    border-radius: 22px;
-    border: 1px solid rgba(222, 215, 203, 0.85);
   }
 
   body #app main.home-page.page .cta-box {
