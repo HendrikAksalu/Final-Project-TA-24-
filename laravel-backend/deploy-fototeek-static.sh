@@ -24,6 +24,7 @@ REMOTE_BASE="${DEPLOY_REMOTE_BASE:-~/domeenid/www.ta24aksalu.itmajakas.ee/fotote
 
 if [[ -z "$HOST" ]]; then
   echo "Usage: DEPLOY_HOST=user@host $0   OR   $0 user@host" >&2
+  echo "Easiest: cd laravel-backend && bash ./deploy-fototeek.sh" >&2
   exit 1
 fi
 
