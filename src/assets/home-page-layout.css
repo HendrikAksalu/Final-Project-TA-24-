@@ -7,13 +7,13 @@
   body #app main.home-page.page {
     padding: 32px 32px 48px;
     display: grid !important;
-    grid-template-columns: minmax(0, 0.45fr) minmax(0, 0.55fr);
+    /* Mockup: ~even two-column split */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
       'header header'
       'hero-left hero-right'
       'footer footer';
-    /* Column divider sits between hero columns (see hero-right border-left). */
-    gap: 28px 0;
+    gap: 28px clamp(28px, 4vw, 52px);
     align-items: start;
   }
 
@@ -21,15 +21,17 @@
     gap: 28px;
     grid-area: hero-left;
     align-self: start;
-    padding-right: clamp(24px, 4vw, 44px);
+    padding-right: 0;
   }
 
   body #app main.home-page.page .hero-right {
     gap: 14px;
     grid-area: hero-right;
     align-self: start;
-    border-left: 1px solid #ded7cb;
-    padding-left: clamp(24px, 4vw, 44px);
+    padding: 22px 24px 26px;
+    background: #faf8f4;
+    border-radius: 22px;
+    border: 1px solid rgba(222, 215, 203, 0.85);
   }
 
   body #app main.home-page.page .cta-box {
@@ -77,6 +79,11 @@
     text-align: left;
   }
 
+  body #app main.home-page.page .cta-button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
   body #app main.home-page.page .cta-box p {
     margin-top: 12px;
   }
@@ -89,23 +96,24 @@
 @media (min-width: 1200px) {
   body #app main.home-page.page {
     max-width: 1180px;
-    grid-template-columns: minmax(340px, 0.42fr) minmax(0, 0.58fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
       'header header'
       'hero-left hero-right'
       'footer footer';
-    gap: 36px 0;
+    gap: 36px clamp(36px, 4.5vw, 56px);
     padding: 36px 40px 64px;
   }
 
   body #app main.home-page.page .hero-left {
     gap: 36px;
-    padding-right: clamp(40px, 4.5vw, 56px);
+    padding-right: 0;
   }
 
   body #app main.home-page.page .hero-right {
     gap: 16px;
-    padding-left: clamp(40px, 4.5vw, 56px);
+    padding: 26px 28px 30px;
+    border-radius: 26px;
   }
 
   body #app main.home-page.page .photo-frame {

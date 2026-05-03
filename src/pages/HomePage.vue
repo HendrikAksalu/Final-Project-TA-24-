@@ -153,13 +153,14 @@ function logout() {
 
 .menu-popover a:hover,
 .menu-popover button:hover {
-  background: #f5f2eb;
+  background: var(--paper-bg, #f5f2ee);
 }
 
 .photo-card {
   margin-top: 18px;
   display: flex;
   justify-content: center;
+  overflow: visible;
 }
 
 .photo-frame {
@@ -168,6 +169,8 @@ function logout() {
   box-shadow: 0 4px 24px rgba(35, 31, 32, 0.1);
   border-radius: 3px;
   padding: 12px 12px 18px;
+  transform: rotate(-3.5deg);
+  transform-origin: center center;
 }
 
 .photo-placeholder {
@@ -224,7 +227,7 @@ h1 em {
 .cta-box {
   margin-top: 24px;
   background: #fff;
-  border-radius: 15px;
+  border-radius: 22px;
   padding: 22px 20px 20px;
   text-align: center;
   box-shadow: 0 2px 18px rgba(35, 31, 32, 0.07);
@@ -262,7 +265,7 @@ h1 em {
 
 .feature-card {
   background: #fff;
-  border-radius: 15px;
+  border-radius: 22px;
   padding: 20px 22px;
   box-shadow: 0 2px 18px rgba(35, 31, 32, 0.07);
 }
