@@ -93,6 +93,20 @@ defineEmits(['menu-click'])
   color: inherit;
 }
 
+.brand-link:visited,
+.brand-link:hover {
+  color: inherit;
+}
+
+.brand-link:focus {
+  outline: none;
+}
+
+.brand-link:focus-visible {
+  outline: 2px solid var(--ink, #231f20);
+  outline-offset: 3px;
+}
+
 .brand-logo {
   width: 26px;
   height: 26px;

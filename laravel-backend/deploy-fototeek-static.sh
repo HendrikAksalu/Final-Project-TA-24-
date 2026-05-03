@@ -36,11 +36,22 @@ node scripts/generate-fototeek-shell.mjs "$TMP_HTML" "$TMP_PHP"
 
 SCP_OPTS=(-i "$KEY" -o StrictHostKeyChecking=accept-new)
 
+# Vite/Laravel emits imported files (e.g. logos) as /build/assets/<hash>.png — shell CSS/JS use /assets/.
+# Upload the same files to BOTH trees so hashed URLs and manifest paths both resolve as real files (not SPA HTML).
+echo "Ensuring remote asset directories exist ..."
+ssh "${SCP_OPTS[@]}" "$HOST" "mkdir -p ${REMOTE_BASE}/assets ${REMOTE_BASE}/build/assets ${REMOTE_BASE}/current/public/assets ${REMOTE_BASE}/current/public/build/assets"
+
 echo "Uploading assets → ${HOST}:${REMOTE_BASE}/assets/ ..."
 scp "${SCP_OPTS[@]}" public/build/assets/* "${HOST}:${REMOTE_BASE}/assets/"
 
+echo "Uploading assets → ${HOST}:${REMOTE_BASE}/build/assets/ (for Vue-imported /build/assets/* URLs) ..."
+scp "${SCP_OPTS[@]}" public/build/assets/* "${HOST}:${REMOTE_BASE}/build/assets/"
+
 echo "Uploading assets → ${HOST}:${REMOTE_BASE}/current/public/assets/ ..."
 scp "${SCP_OPTS[@]}" public/build/assets/* "${HOST}:${REMOTE_BASE}/current/public/assets/"
+
+echo "Uploading assets → ${HOST}:${REMOTE_BASE}/current/public/build/assets/ ..."
+scp "${SCP_OPTS[@]}" public/build/assets/* "${HOST}:${REMOTE_BASE}/current/public/build/assets/"
 
 echo "Uploading public/logo.png (favicon /logo.png) ..."
 scp "${SCP_OPTS[@]}" public/logo.png "${HOST}:${REMOTE_BASE}/logo.png"
