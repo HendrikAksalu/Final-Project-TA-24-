@@ -42,6 +42,10 @@ scp "${SCP_OPTS[@]}" public/build/assets/* "${HOST}:${REMOTE_BASE}/assets/"
 echo "Uploading assets → ${HOST}:${REMOTE_BASE}/current/public/assets/ ..."
 scp "${SCP_OPTS[@]}" public/build/assets/* "${HOST}:${REMOTE_BASE}/current/public/assets/"
 
+echo "Uploading public/logo.png (favicon /logo.png) ..."
+scp "${SCP_OPTS[@]}" public/logo.png "${HOST}:${REMOTE_BASE}/logo.png"
+scp "${SCP_OPTS[@]}" public/logo.png "${HOST}:${REMOTE_BASE}/current/public/logo.png"
+
 echo "Uploading index.php (PHP shell — bypasses static HTML cache) ..."
 scp "${SCP_OPTS[@]}" "$TMP_PHP" "${HOST}:${REMOTE_BASE}/current/public/index.php"
 scp "${SCP_OPTS[@]}" "$TMP_PHP" "${HOST}:${REMOTE_BASE}/index.php"
