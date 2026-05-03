@@ -14,11 +14,13 @@ if [[ -s "$NVM_DIR/nvm.sh" ]]; then
   set +u
   # shellcheck source=/dev/null
   . "$NVM_DIR/nvm.sh"
+  echo "nvm loaded (shell ready)."
   if [[ -f .nvmrc ]]; then
     v="$(tr -d '\r\n' < .nvmrc)"
     echo "Using .nvmrc → Node $v"
-    echo "(If this is the first run, installing Node can take 1–2 minutes.)"
+    echo "If Node is not installed yet, 'nvm install' downloads it — often 1–3 minutes, looks idle."
     nvm install "$v"
+    echo "Switching to Node $v ..."
     nvm use "$v"
   else
     nvm use
