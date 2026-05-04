@@ -7,6 +7,9 @@ concurrency:
   group: production_deploy
   cancel-in-progress: false
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,6 +18,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.PRIVATE_KEY }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -28,5 +36,5 @@ jobs:
           deployer-version: "7.5.12"
           sub-directory: laravel-backend
           dep: deploy stage
-          private-key: ${{ secrets.PRIVATE_KEY }}
+          skip-ssh-setup: true
           verbosity: -vvv
