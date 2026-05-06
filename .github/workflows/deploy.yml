@@ -27,6 +27,24 @@ jobs:
       - name: Add Zone server host key (avoids SSH "verification failed")
         run: mkdir -p ~/.ssh && chmod 700 ~/.ssh && ssh-keyscan -H ta24aksalu.itmajakas.ee >> ~/.ssh/known_hosts && chmod 644 ~/.ssh/known_hosts
 
+      - name: Preflight — fototeek path writable & current not a plain directory
+        run: |
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes virt137753@ta24aksalu.itmajakas.ee 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          BASE="$HOME/domeenid/www.ta24aksalu.itmajakas.ee/fototeek"
+          if ! mkdir -p "$BASE" 2>/dev/null; then
+            echo "::error::Cannot create or access $BASE (permissions?). Fix Zone folder ownership."
+            exit 1
+          fi
+          if [ -e "$BASE/current" ] && [ ! -L "$BASE/current" ]; then
+            echo "::error::Deployer needs $BASE/current to be a symlink, but it is a real directory/file."
+            echo "SSH to server and run: mv \"$BASE/current\" \"$BASE/current.backup-manual\""
+            exit 1
+          fi
+          echo "OK: $BASE — current is absent or a symlink."
+          ls -la "$BASE" || true
+          REMOTE
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:

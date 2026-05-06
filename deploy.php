@@ -9,6 +9,10 @@
  * Zone veebiserveri dokumentjuur peaks olema:
  *   .../fototeek/current/laravel-backend/public
  *
+ * Kui CI/lokaalne "deploy:setup" kukub: Deployer nõuab, et
+ *   .../fototeek/current oleks sümlink või puudu — mitte tavaline kaust.
+ *   Lahendus: SSH ja mv current current.backup-manual
+ *
  * Kohalik käsk (SSH võti ja git ligipääs peaksid töötama):
  *   dep deploy stage -vvv
  */
