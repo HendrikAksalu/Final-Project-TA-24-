@@ -319,7 +319,7 @@ async function logout() {
 
     <section class="title">
       <p>Perearhiiv</p>
-      <h1>Minu pildid</h1>
+      <h1>{{ albumMeta?.title ?? 'Minu pildid' }}</h1>
       <p class="subtitle">
         Säilitame sinu pere ajaloo puudutatava olemuse püsivas ja kaunis
         digitaalses arhiivis.
