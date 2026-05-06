@@ -1,40 +1,120 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import { apiFetch, getToken, logoutSession, parseApiError } from '@/api/fototeekApi.js'
 
-const STORAGE_KEY = 'fototeek_albums'
+const router = useRouter()
+const user = ref(null)
+const menuOpen = ref(false)
 
-function loadAlbums() {
+try {
+  user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
+} catch (error) {
+  user.value = null
+}
+
+const isLoggedIn = computed(() => Boolean(user.value && getToken()))
+
+const albums = ref([])
+const listError = ref('')
+const listLoading = ref(false)
+
+const orderedAlbums = computed(() =>
+  [...albums.value].sort((a, b) => Number(a.id || 0) - Number(b.id || 0)),
+)
+
+async function refreshAlbums() {
+  if (!getToken()) return
+  listError.value = ''
+  listLoading.value = true
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-    return Array.isArray(parsed) ? parsed : []
-  } catch (error) {
-    return []
+    const res = await apiFetch('/albums')
+    if (!res.ok) {
+      listError.value = await parseApiError(res, 'Albumite laadimine ebaõnnestus.')
+      albums.value = []
+      return
+    }
+    const data = await res.json()
+    albums.value = Array.isArray(data.albums) ? data.albums : []
+  } finally {
+    listLoading.value = false
   }
 }
 
-const albums = ref(loadAlbums())
+onMounted(() => {
+  refreshAlbums()
+})
 
-function saveAlbums() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(albums.value))
+async function createAlbum() {
+  const index = albums.value.length + 1
+  const res = await apiFetch('/albums', {
+    method: 'POST',
+    body: {
+      title: `Uus album ${index}`,
+      photoClass: 'beach',
+      rotate: index % 2 ? 'rotate-right' : '',
+    },
+  })
+  if (!res.ok) {
+    alert(await parseApiError(res, 'Albumi loomine ebaõnnestus.'))
+    return
+  }
+  await refreshAlbums()
 }
 
-function createAlbum() {
-  const index = albums.value.length + 1
-  albums.value.unshift({
-    id: Date.now(),
-    title: `Uus album ${index}`,
-    memories: 0,
-    photoClass: 'beach',
-    rotate: index % 2 ? 'rotate-right' : '',
+async function deleteAlbum(albumId) {
+  const shouldDelete = window.confirm('Kas soovid selle albumi kustutada?')
+  if (!shouldDelete) return
+
+  const res = await apiFetch(`/albums/${albumId}`, { method: 'DELETE' })
+  if (!res.ok) {
+    alert(await parseApiError(res, 'Albumi kustutamine ebaõnnestus.'))
+    return
+  }
+  await refreshAlbums()
+}
+
+async function renameAlbum(albumId, currentTitle) {
+  const nextTitle = window.prompt('Sisesta uus albumi nimi:', currentTitle || '')
+  if (nextTitle === null) return
+
+  const cleanedTitle = nextTitle.trim()
+  if (!cleanedTitle) return
+
+  const res = await apiFetch(`/albums/${albumId}`, {
+    method: 'PATCH',
+    body: { title: cleanedTitle },
   })
-  saveAlbums()
+  if (!res.ok) {
+    alert(await parseApiError(res, 'Nime muutmine ebaõnnestus.'))
+    return
+  }
+  await refreshAlbums()
+}
+
+async function logout() {
+  await logoutSession()
+  user.value = null
+  menuOpen.value = false
+  albums.value = []
+  router.push('/')
 }
 </script>
 
 <template>
-  <main class="page">
-    <AppHeader :back-to="'/'" />
+  <main class="page page-shell">
+    <div class="header-wrap">
+      <AppHeader
+        :show-auth-links="!isLoggedIn"
+        :show-menu="isLoggedIn"
+        @menu-click="menuOpen = !menuOpen"
+      />
+      <div v-if="isLoggedIn && menuOpen" class="menu-popover">
+        <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
+        <button type="button" @click="logout">Logi välja</button>
+      </div>
+    </div>
 
     <section class="title">
       <p>Sinu pärand</p>
@@ -43,20 +123,29 @@ function createAlbum() {
       </h1>
     </section>
 
+    <p v-if="listError" class="list-error">{{ listError }}</p>
+    <p v-else-if="listLoading" class="list-loading">Laadin albumeid…</p>
+
     <section v-if="albums.length" class="album-grid">
-      <RouterLink
-        v-for="album in albums"
-        :key="album.id || album.title"
-        :to="{ path: '/albumid', query: { albumId: album.id } }"
-        class="polaroid"
-        :class="album.rotate"
-      >
-        <div class="photo" :class="album.photoClass" />
-        <h2>{{ album.title }}</h2>
-        <span>{{ album.memories }} mälestust</span>
-      </RouterLink>
+      <article v-for="album in orderedAlbums" :key="album.id || album.title" class="album-card">
+        <RouterLink :to="{ path: '/album', query: { albumId: album.id } }" class="polaroid" :class="album.rotate">
+          <div class="photo" :class="{ 'empty-photo': !album.coverThumbUrl }">
+            <img v-if="album.coverThumbUrl" :src="album.coverThumbUrl" alt="" class="album-cover-image" />
+            <span v-else class="empty-photo-label">Tühi</span>
+          </div>
+          <h2>{{ album.title }}</h2>
+          <span>{{ album.memories }} pilti</span>
+          <span v-if="album.isSharedWithMe" class="shared-tag">Jagatud sinuga</span>
+        </RouterLink>
+        <div v-if="album.myRole === 'owner'" class="album-actions">
+          <button type="button" class="rename-album-btn" @click.prevent="renameAlbum(album.id, album.title)">
+            Muuda nime
+          </button>
+          <button type="button" class="delete-album-btn" @click.prevent="deleteAlbum(album.id)">Kustuta</button>
+        </div>
+      </article>
     </section>
-    <section v-else class="empty-state">
+    <section v-else-if="!listLoading" class="empty-state">
       <p>Sul pole veel ühtegi albumit.</p>
       <p>Loo esimene album, et alustada mälestuste kogumist.</p>
     </section>
@@ -69,7 +158,6 @@ function createAlbum() {
         <a href="#">Privaatsus</a>
         <a href="#">Eetika</a>
       </nav>
-      <p class="bookmark">◫</p>
       <p class="copyright">© 2025 Fototeek</p>
       <p class="note">Hoiame meie esivanemate lugusid.</p>
     </footer>
@@ -77,12 +165,61 @@ function createAlbum() {
 </template>
 
 <style scoped>
-.page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 16px 14px 28px;
-  color: #1c1714;
-  font-family: Georgia, 'Times New Roman', serif;
+.header-wrap {
+  position: relative;
+}
+
+.menu-popover {
+  position: absolute;
+  right: 0;
+  top: 28px;
+  min-width: 130px;
+  background: var(--surface-strong, #fff);
+  border: 1px solid var(--line-soft, #ddd4c6);
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.menu-popover a,
+.menu-popover button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--ink, #231f20);
+  text-decoration: none;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.menu-popover a:hover,
+.menu-popover button:hover {
+  background: var(--paper-bg, #f5f2ee);
+}
+
+.list-error,
+.list-loading {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 14px;
+  color: #6f6257;
+}
+
+.list-error {
+  color: #8b3a3a;
+}
+
+.shared-tag {
+  display: block;
+  margin-top: 4px;
+  font-size: 8px !important;
+  letter-spacing: 0.06em !important;
+  color: #6b7f9e !important;
 }
 
 .title {
@@ -109,6 +246,12 @@ function createAlbum() {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.album-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .empty-state {
@@ -143,6 +286,47 @@ function createAlbum() {
   transform: scale(0.98);
 }
 
+.delete-album-btn {
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #f8f4ed;
+  color: #3f342d;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 8px 12px;
+  cursor: pointer;
+  align-self: center;
+}
+
+.delete-album-btn:hover {
+  background: #f1ebdf;
+}
+
+.album-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.rename-album-btn {
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #f8f4ed;
+  color: #3f342d;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.rename-album-btn:hover {
+  background: #f1ebdf;
+}
+
 .polaroid::before {
   content: '';
   position: absolute;
@@ -165,6 +349,29 @@ function createAlbum() {
 .photo {
   height: 130px;
   border: 1px solid #d9d3c6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.album-cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.empty-photo {
+  background: #fff;
+}
+
+.empty-photo-label {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 30px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4b4037;
 }
 
 .beach {
@@ -221,7 +428,9 @@ function createAlbum() {
 }
 
 .footer {
-  margin-top: 52px;
+  margin-top: 62px;
+  border-top: 1px solid var(--line-soft, #dad6cd);
+  padding-top: 28px;
   text-align: center;
 }
 
@@ -232,40 +441,33 @@ function createAlbum() {
   text-transform: uppercase;
   letter-spacing: 0.13em;
   font-size: 10px;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-weight: 500;
 }
 
 .footer a {
-  color: #1c1714;
+  color: var(--ink, #231f20);
   text-decoration: none;
 }
 
-.bookmark {
-  margin-top: 14px;
-  color: #8e8276;
-}
-
 .copyright {
-  margin-top: 12px;
+  margin-top: 20px;
   text-transform: uppercase;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.12em;
   font-size: 9px;
-  font-family: Arial, sans-serif;
-  color: #7f7266;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: #5c534d;
 }
 
 .note {
-  margin-top: 6px;
+  margin-top: 8px;
   font-style: italic;
-  font-size: 12px;
-  color: #938578;
+  font-size: 13px;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  color: #655a52;
 }
 
-@media (min-width: 768px) {
-  .page {
-    padding: 28px 28px 40px;
-  }
-
+@media (min-width: 640px) {
   .title h1 {
     font-size: 72px;
   }
@@ -276,11 +478,7 @@ function createAlbum() {
   }
 }
 
-@media (min-width: 1024px) {
-  .page {
-    padding: 34px 40px 52px;
-  }
-
+@media (min-width: 1200px) {
   .title h1 {
     font-size: 76px;
   }

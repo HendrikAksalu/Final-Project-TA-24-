@@ -2,6 +2,8 @@
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import homeHeroPhotoSrc from '@/assets/home-hero-photo.png'
+import { getToken, logoutSession } from '@/api/fototeekApi.js'
 
 const user = ref(null)
 const menuOpen = ref(false)
@@ -13,11 +15,12 @@ try {
   user.value = null
 }
 
-const isLoggedIn = computed(() => Boolean(user.value))
-const beginArchiveRoute = computed(() => (isLoggedIn.value ? '/parand' : '/registreeru'))
+const isLoggedIn = computed(() => Boolean(user.value && getToken()))
+const beginArchiveRoute = computed(() => (isLoggedIn.value ? '/albumid' : '/registreeru'))
+const beginArchiveLabel = computed(() => (isLoggedIn.value ? 'Vaata oma albumeid' : 'Alusta oma arhiivi'))
 
-function logout() {
-  localStorage.removeItem('fototeek_user')
+async function logout() {
+  await logoutSession()
   user.value = null
   menuOpen.value = false
   router.push('/')
@@ -33,7 +36,7 @@ function logout() {
         @menu-click="menuOpen = !menuOpen"
       />
       <div v-if="isLoggedIn && menuOpen" class="menu-popover">
-        <RouterLink to="/parand" @click="menuOpen = false">Minu pärand</RouterLink>
+        <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
         <button type="button" @click="logout">Logi välja</button>
       </div>
     </div>
@@ -41,16 +44,14 @@ function logout() {
     <div class="hero-left">
       <section class="photo-card">
         <div class="photo-frame">
-          <div class="photo-placeholder" />
-          <p>Pühapäevane piknik, 1954</p>
+          <img class="photo-placeholder" :src="homeHeroPhotoSrc" alt='AS-i "Lääne Ehitus" töömehed, 2000' />
+          <p>AS-i "Lääne Ehitus" töömehed, 2000</p>
         </div>
       </section>
 
       <section class="intro">
         <p class="eyebrow">Perearhiiv</p>
-        <h1>
-          Digitaalne kodu sinu <em>elavatele mälestustele.</em>
-        </h1>
+        <h1>Digitaalne kodu sinu elavatele mälestustele.</h1>
         <p class="copy">
           Hoia pere tähtsad hetked alles ka tulevaste põlvkondade jaoks.
         </p>
@@ -59,7 +60,7 @@ function logout() {
 
     <div class="hero-right">
       <section class="cta-box">
-        <RouterLink :to="beginArchiveRoute" class="cta-button">Alusta oma arhiivi</RouterLink>
+        <RouterLink :to="beginArchiveRoute" class="cta-button">{{ beginArchiveLabel }}</RouterLink>
         <p>Iga mälestus väärib oma kohta.</p>
       </section>
 
@@ -93,9 +94,9 @@ function logout() {
 
 <style scoped>
 .page {
-  max-width: 1200px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 20px 16px 34px;
+  padding: 20px 20px 30px;
   color: var(--ink, #231f20);
   font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
 }
@@ -128,8 +129,8 @@ function logout() {
   right: 0;
   top: 28px;
   min-width: 130px;
-  background: #fff;
-  border: 1px solid #ddd4c6;
+  background: var(--surface-strong, #fff);
+  border: 1px solid var(--line-soft, #ddd4c6);
   border-radius: 10px;
   box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
   overflow: hidden;
@@ -157,7 +158,7 @@ function logout() {
 }
 
 .photo-card {
-  margin-top: 18px;
+  margin-top: 10px;
   display: flex;
   justify-content: center;
   overflow: visible;
@@ -165,7 +166,7 @@ function logout() {
 
 .photo-frame {
   width: min(100%, 220px);
-  background: #fff;
+  background: var(--surface-strong, #fff);
   box-shadow: 0 4px 24px rgba(35, 31, 32, 0.1);
   border-radius: 3px;
   padding: 12px 12px 18px;
@@ -175,8 +176,10 @@ function logout() {
 
 .photo-placeholder {
   height: 170px;
-  background: linear-gradient(180deg, #d8cfbe 0%, #d6c9b0 45%, #8d857b 45%, #b9a88f 100%);
-  border: 1px solid #d6d0c3;
+  width: 100%;
+  object-fit: cover;
+  border: 1px solid var(--line-soft, #d6d0c3);
+  display: block;
 }
 
 .photo-frame p {
@@ -188,7 +191,7 @@ function logout() {
 }
 
 .intro {
-  margin-top: 26px;
+  margin-top: 24px;
   text-align: center;
 }
 
@@ -203,34 +206,28 @@ function logout() {
 }
 
 h1 {
-  font-size: clamp(36px, 9vw, 48px);
-  line-height: 1.08;
+  font-size: clamp(36px, 9vw, 50px);
+  line-height: 1.04;
   font-weight: 600;
-  max-width: 11em;
-}
-
-h1 em {
-  display: inline;
-  font-style: italic;
-  font-weight: 500;
+  max-width: 8.8em;
 }
 
 .copy {
-  margin: 16px auto 0;
-  max-width: 22em;
+  margin: 20px auto 0;
+  max-width: 19em;
   font-style: italic;
   color: #3a3330;
-  line-height: 1.45;
-  font-size: clamp(17px, 4.2vw, 20px);
+  line-height: 1.4;
+  font-size: clamp(17px, 4.2vw, 19px);
 }
 
 .cta-box {
-  margin-top: 24px;
-  background: #fff;
-  border-radius: 22px;
-  padding: 22px 20px 20px;
+  margin-top: 20px;
+  background: var(--surface, #f8f7f4);
+  border-radius: 20px;
+  padding: 24px 26px 20px;
   text-align: center;
-  box-shadow: 0 2px 18px rgba(35, 31, 32, 0.07);
+  border: 1px solid var(--line-soft, #efebe5);
 }
 
 .cta-button {
@@ -240,34 +237,34 @@ h1 em {
   border-radius: 999px;
   text-decoration: none;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
   font-size: 11px;
   font-family: var(--font-sans, 'Inter', sans-serif);
   font-weight: 700;
-  min-height: 48px;
-  padding: 15px 28px;
+  min-height: 44px;
+  padding: 13px 28px;
   text-align: center;
 }
 
 .cta-box p {
   margin-top: 14px;
   font-style: italic;
-  font-size: 14px;
+  font-size: 16px;
   font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
   color: #5c534d;
 }
 
 .feature-list {
-  margin-top: 18px;
+  margin-top: 14px;
   display: grid;
   gap: 14px;
 }
 
 .feature-card {
-  background: #fff;
-  border-radius: 22px;
-  padding: 20px 22px;
-  box-shadow: 0 2px 18px rgba(35, 31, 32, 0.07);
+  background: var(--surface, #f8f7f4);
+  border-radius: 20px;
+  padding: 20px 24px;
+  border: 1px solid var(--line-soft, #efebe5);
 }
 
 .feature-card h2 {
@@ -281,20 +278,20 @@ h1 em {
 }
 
 .feature-card p {
-  margin-top: 10px;
+  margin-top: 8px;
   font-style: italic;
   color: #3a3330;
-  line-height: 1.5;
-  font-size: 15px;
+  line-height: 1.35;
+  font-size: clamp(15px, 4.4vw, 22px);
   font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
 }
 
 .footer {
-  margin-top: 44px;
+  margin-top: 72px;
   text-align: center;
   grid-area: footer;
   border-top: 1px solid #ded7cb;
-  padding-top: 24px;
+  padding-top: 30px;
 }
 
 .footer nav {

@@ -1,9 +1,21 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import loginPhotoSrc from '@/assets/login-photo.png'
+import { apiFetch, getToken, logoutSession, parseApiError, setToken } from '@/api/fototeekApi.js'
 
 const router = useRouter()
+const user = ref(null)
+const menuOpen = ref(false)
+
+try {
+  user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
+} catch (error) {
+  user.value = null
+}
+
+const isLoggedIn = computed(() => Boolean(user.value && getToken()))
 
 const form = ref({
   email: '',
@@ -18,56 +30,89 @@ async function onSubmit() {
   isSubmitting.value = true
   errorMessage.value = ''
   successMessage.value = ''
+  try {
+    const response = await apiFetch('/login', {
+      method: 'POST',
+      body: {
+        email: form.value.email,
+        password: form.value.password,
+      },
+    })
 
-  localStorage.setItem(
-    'fototeek_user',
-    JSON.stringify({
-      name: 'Kasutaja',
-      email: form.value.email || '',
-    }),
-  )
+    if (!response.ok) {
+      errorMessage.value = await parseApiError(response, 'Sisselogimine ebaõnnestus. Proovi uuesti.')
+      return
+    }
 
+    const payload = await response.json()
+    setToken(payload?.token || '')
+    localStorage.setItem('fototeek_user', JSON.stringify(payload?.user || null))
+    successMessage.value = 'Sisselogimine õnnestus.'
+    router.push('/')
+  } catch (error) {
+    errorMessage.value = 'Serveriga ei saanud ühendust. Kontrolli, et backend töötab.'
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+async function logout() {
+  await logoutSession()
+  user.value = null
+  menuOpen.value = false
   router.push('/')
 }
 </script>
 
 <template>
   <main class="page">
-    <AppHeader :back-to="'/'" />
-
-    <section class="title">
-      <p>Perearhiiv</p>
-      <h1>Tore sind taas näha.</h1>
-      <h2>Sinu mälestused ootavad.</h2>
-    </section>
-
-    <section class="photo" aria-hidden="true">
-      <div class="photo-polaroid" />
-    </section>
-
-    <form class="login-form" @submit.prevent="onSubmit">
-      <input v-model="form.email" type="email" placeholder="E-posti aadress" />
-
-      <div class="password-wrap">
-        <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="Parool" />
-        <button type="button" @click="showPassword = !showPassword">
-          {{ showPassword ? 'PEIDA' : 'NÄITA' }}
-        </button>
+    <div class="header-wrap">
+      <AppHeader :show-auth-links="!isLoggedIn" :show-menu="isLoggedIn" @menu-click="menuOpen = !menuOpen" />
+      <div v-if="isLoggedIn && menuOpen" class="menu-popover">
+        <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
+        <button type="button" @click="logout">Logi välja</button>
       </div>
+    </div>
 
-      <a href="#" class="forgot-link">Unustasid parooli?</a>
-      <button type="submit" class="submit-btn" :disabled="isSubmitting">
-        {{ isSubmitting ? 'Sisenen...' : 'Logi sisse' }}
-      </button>
-    </form>
+    <section class="hero-left">
+      <section class="title">
+        <p>Perearhiiv</p>
+        <h1>Tore sind taas<br />näha.</h1>
+        <h2>Sinu mälestused ootavad.</h2>
+      </section>
+      <section class="photo-card" aria-hidden="true">
+        <div class="photo-frame">
+          <img class="photo-placeholder" :src="loginPhotoSrc" alt="Koer, kass ja koer, 1932" />
+          <p>Koer, kass ja koer, 1932</p>
+        </div>
+      </section>
+    </section>
 
-    <p v-if="errorMessage" class="feedback error">{{ errorMessage }}</p>
-    <p v-if="successMessage" class="feedback success">{{ successMessage }}</p>
+    <section class="hero-right">
+      <form class="login-form" @submit.prevent="onSubmit">
+        <input v-model="form.email" type="email" placeholder="E-posti aadress" />
 
-    <p class="register-line">
-      Sul ei ole veel arhiivi?
-      <RouterLink to="/registreeru">Alusta siit</RouterLink>
-    </p>
+        <div class="password-wrap">
+          <input v-model="form.password" :type="showPassword ? 'text' : 'password'" placeholder="Parool" />
+          <button type="button" @click="showPassword = !showPassword">
+            {{ showPassword ? 'PEIDA' : 'NÄITA' }}
+          </button>
+        </div>
+
+        <a href="#" class="forgot-link">Unustasid parooli?</a>
+        <button type="submit" class="submit-btn" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Sisenen...' : 'Logi sisse' }}
+        </button>
+      </form>
+
+      <p v-if="errorMessage" class="feedback error">{{ errorMessage }}</p>
+      <p v-if="successMessage" class="feedback success">{{ successMessage }}</p>
+
+      <p class="register-line">
+        Sul ei ole veel arhiivi?
+        <RouterLink to="/registreeru">Alusta siit</RouterLink>
+      </p>
+    </section>
 
     <footer class="footer">
       <nav>
@@ -75,7 +120,6 @@ async function onSubmit() {
         <a href="#">Privaatsus</a>
         <a href="#">Eetika</a>
       </nav>
-      <p class="bookmark">◫</p>
       <p class="copyright">© 2025 Fototeek</p>
       <p class="note">Hoiame meie esivanemate lugusid.</p>
     </footer>
@@ -84,87 +128,139 @@ async function onSubmit() {
 
 <style scoped>
 .page {
-  max-width: 1120px;
+  max-width: 1240px;
   margin: 0 auto;
-  padding: 16px 14px 28px;
-  color: #1c1714;
-  font-family: Georgia, 'Times New Roman', serif;
+  padding: 20px 20px 30px;
+  color: var(--ink, #231f20);
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+}
+
+.header-wrap {
+  position: relative;
+  grid-area: header;
+}
+
+.menu-popover {
+  position: absolute;
+  right: 0;
+  top: 28px;
+  min-width: 130px;
+  background: var(--surface-strong, #fff);
+  border: 1px solid var(--line-soft, #ddd4c6);
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.menu-popover a,
+.menu-popover button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--ink, #231f20);
+  text-decoration: none;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.menu-popover a:hover,
+.menu-popover button:hover {
+  background: var(--paper-bg, #f5f2ee);
+}
+
+.hero-left {
+  margin-top: 24px;
+}
+
+.hero-right {
+  margin-top: 22px;
 }
 
 .title {
-  margin-top: 22px;
   text-align: center;
 }
 
 .title p {
   text-transform: uppercase;
-  letter-spacing: 0.2em;
-  font-family: Arial, sans-serif;
+  letter-spacing: 0.18em;
+  font-family: var(--font-sans, 'Inter', sans-serif);
   font-size: 10px;
+  font-weight: 600;
 }
 
 .title h1 {
   margin-top: 16px;
-  font-size: 58px;
-  font-weight: 500;
-  line-height: 0.95;
+  font-size: clamp(52px, 11vw, 66px);
+  font-weight: 600;
+  line-height: 1.03;
 }
 
 .title h2 {
-  margin-top: 10px;
+  margin-top: 18px;
   font-style: italic;
-  font-size: 38px;
+  font-size: clamp(24px, 5.5vw, 38px);
   font-weight: 500;
-  line-height: 1.02;
+  line-height: 1.15;
   color: #3e322a;
 }
 
-.photo {
-  margin-top: 18px;
+.photo-card {
+  margin-top: 26px;
   display: flex;
   justify-content: center;
+  overflow: visible;
 }
 
-.photo-polaroid {
-  width: 152px;
-  height: 190px;
-  background: #f3f0e8;
-  box-shadow: 0 5px 14px rgba(15, 9, 7, 0.16);
-  transform: rotate(-2deg);
-  position: relative;
+.photo-frame {
+  width: min(100%, 220px);
+  background: var(--surface-strong, #fff);
+  box-shadow: 0 4px 24px rgba(35, 31, 32, 0.1);
+  border-radius: 3px;
+  padding: 12px 12px 18px;
+  transform: rotate(-3.5deg);
+  transform-origin: center center;
 }
 
-.photo-polaroid::before {
-  content: '';
-  position: absolute;
-  inset: 13px 12px 36px;
-  background: radial-gradient(circle at 55% 45%, #6a6a6a 0%, #2f2f2f 50%, #1f1f1f 100%);
+.photo-placeholder {
+  height: 170px;
+  width: 100%;
+  object-fit: cover;
+  object-position: 62% center;
+  border: 1px solid var(--line-soft, #d6d0c3);
+  display: block;
 }
 
-.photo-polaroid::after {
-  content: '';
-  position: absolute;
-  width: 36px;
-  height: 11px;
-  left: 50%;
-  top: -8px;
-  transform: translateX(-50%);
-  background: #ede8de;
+.photo-frame p {
+  text-align: center;
+  margin-top: 14px;
+  font-style: italic;
+  font-size: 14px;
+  color: #4a423c;
 }
 
 .login-form {
-  margin-top: 36px;
   display: grid;
-  gap: 11px;
+  gap: 10px;
+  background: var(--surface, #f8f7f4);
+  border: 1px solid var(--line-soft, #e4ddd1);
+  border-radius: 20px;
+  padding: 16px;
 }
 
 .login-form input {
   width: 100%;
-  border: none;
-  border-radius: 14px;
-  padding: 17px 18px;
-  background: #f4f4f4;
-  font-size: 14px;
+  border: 1px solid var(--line-soft, #e4ddd1);
+  border-radius: 999px;
+  padding: 14px 18px;
+  background: var(--surface-strong, #fff);
+  font-size: 13px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: #3e342e;
 }
 
 .login-form input::placeholder {
@@ -183,7 +279,7 @@ async function onSubmit() {
   border: none;
   background: transparent;
   letter-spacing: 0.08em;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   color: #5c5047;
   cursor: pointer;
@@ -192,7 +288,7 @@ async function onSubmit() {
 .forgot-link {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans, 'Inter', sans-serif);
   font-size: 10px;
   text-align: right;
   color: #7a6e63;
@@ -200,16 +296,17 @@ async function onSubmit() {
 }
 
 .submit-btn {
-  margin-top: 4px;
+  margin-top: 8px;
   border: none;
   border-radius: 999px;
   background: #1e130c;
   color: #fff;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-family: Arial, sans-serif;
+  letter-spacing: 0.1em;
+  font-family: var(--font-sans, 'Inter', sans-serif);
   font-weight: 700;
-  padding: 16px;
+  padding: 14px;
+  min-height: 42px;
   cursor: pointer;
 }
 
@@ -234,22 +331,24 @@ async function onSubmit() {
 }
 
 .register-line {
-  margin-top: 28px;
+  margin-top: 24px;
   text-align: center;
   font-style: italic;
   color: #5d4f45;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .register-line a {
   color: #1c1714;
   font-style: normal;
   font-weight: 700;
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 .footer {
-  margin-top: 34px;
+  margin-top: 62px;
+  border-top: 1px solid var(--line-soft, #dad6cd);
+  padding-top: 28px;
   text-align: center;
 }
 
@@ -268,17 +367,12 @@ async function onSubmit() {
   text-decoration: none;
 }
 
-.bookmark {
-  margin-top: 14px;
-  color: #8e8276;
-}
-
 .copyright {
-  margin-top: 12px;
+  margin-top: 20px;
   text-transform: uppercase;
   letter-spacing: 0.11em;
   font-size: 9px;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans, 'Inter', sans-serif);
   color: #7f7266;
 }
 
@@ -291,81 +385,109 @@ async function onSubmit() {
 
 @media (min-width: 768px) {
   .page {
-    padding: 28px 28px 40px;
+    padding: 26px 32px 44px;
   }
 
-  .title h1 {
-    font-size: 72px;
+  .hero-left {
+    margin-top: 28px;
   }
 
-  .title h2 {
-    font-size: 42px;
+  .hero-right {
+    margin-top: 26px;
   }
 
-  .photo-polaroid {
-    width: 210px;
-    height: 260px;
+  .photo-frame {
+    width: min(100%, 250px);
   }
 
   .login-form {
-    max-width: 680px;
+    max-width: 560px;
     margin-left: auto;
     margin-right: auto;
+    padding: 18px;
   }
 }
 
 @media (min-width: 1024px) {
   .page {
     display: grid;
-    grid-template-columns: minmax(300px, 0.42fr) minmax(0, 0.58fr);
+    grid-template-columns: minmax(300px, 0.5fr) minmax(300px, 0.5fr);
     grid-template-areas:
       'header header'
-      'title title'
-      'photo form'
-      'register register'
+      'left right'
       'footer footer';
-    gap: 24px 44px;
-    padding: 34px 40px 52px;
+    gap: 28px 56px;
+    padding: 26px 42px 52px;
+    position: relative;
   }
 
-  .page > :first-child {
-    grid-area: header;
+  .page::after {
+    content: '';
+    position: absolute;
+    top: 122px;
+    bottom: 178px;
+    left: 50%;
+    width: 1px;
+    transform: translateX(-50%);
+    background: var(--line-soft, #d9d2c7);
+    pointer-events: none;
+  }
+
+  .hero-left {
+    grid-area: left;
+    margin-top: 2px;
+    padding-right: 14px;
+  }
+
+  .photo-card {
+    justify-content: flex-start;
   }
 
   .title {
-    grid-area: title;
-    margin-top: 10px;
+    text-align: left;
   }
 
-  .photo {
-    grid-area: photo;
-    margin-top: 0;
-    align-self: start;
+  .title h1 {
+    max-width: none;
+    font-size: clamp(62px, 6.2vw, 70px);
+    line-height: 1.02;
   }
 
-  .photo-polaroid {
-    width: 260px;
-    height: 322px;
+  .title h2 {
+    max-width: 8.3em;
+    font-size: clamp(24px, 2.15vw, 42px);
+    line-height: 1.14;
+  }
+
+  .hero-right {
+    grid-area: right;
+    margin-top: 90px;
+    padding-left: 18px;
+  }
+
+  .photo-frame {
+    width: min(100%, 280px);
+    padding: 14px 14px 20px;
+  }
+
+  .photo-placeholder {
+    height: 240px;
   }
 
   .login-form {
-    grid-area: form;
-    max-width: none;
-    width: 100%;
+    max-width: 420px;
     margin: 0;
-    padding: 26px;
-    border-radius: 18px;
-    background: #f5f2eb;
+    gap: 12px;
+    padding: 20px;
   }
 
   .register-line {
-    grid-area: register;
-    margin-top: 0;
+    max-width: 420px;
   }
 
   .footer {
     grid-area: footer;
-    margin-top: 30px;
+    margin-top: 36px;
   }
 }
 </style>

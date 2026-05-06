@@ -34,7 +34,6 @@ jobs:
         uses: deployphp/action@v1
         with:
           deployer-version: "7.5.12"
-          sub-directory: laravel-backend
           dep: deploy stage
           skip-ssh-setup: true
           verbosity: -vvv

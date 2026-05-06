@@ -1,39 +1,96 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import { apiFetch, getToken, logoutSession, normalizeMemoryFromApi, parseApiError } from '@/api/fototeekApi.js'
 
 const route = useRoute()
-const ALBUMS_KEY = 'fototeek_albums'
+const router = useRouter()
+const user = ref(null)
+const menuOpen = ref(false)
 
-function loadAlbums() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(ALBUMS_KEY) || '[]')
-    return Array.isArray(parsed) ? parsed : []
-  } catch (error) {
-    return []
-  }
+try {
+  user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
+} catch (error) {
+  user.value = null
 }
 
-const albums = ref(loadAlbums())
+const isLoggedIn = computed(() => Boolean(user.value && getToken()))
 
-const currentAlbum = computed(() =>
-  albums.value.find((album) => String(album.id) === String(route.query.albumId)),
+const albumMeta = ref(null)
+const memories = ref([])
+const pageError = ref('')
+const collaborators = ref([])
+const shareEmail = ref('')
+const shareNotice = ref('')
+
+const canEdit = computed(() => {
+  const role = albumMeta.value?.myRole
+  return role === 'owner' || role === 'editor'
+})
+
+async function loadCollaborators() {
+  const id = route.query.albumId
+  if (!id || albumMeta.value?.myRole !== 'owner') {
+    collaborators.value = []
+    return
+  }
+  const res = await apiFetch(`/albums/${id}/collaborators`)
+  if (!res.ok) {
+    collaborators.value = []
+    return
+  }
+  const data = await res.json()
+  collaborators.value = Array.isArray(data.collaborators) ? data.collaborators : []
+}
+
+async function loadAlbumPage() {
+  const id = route.query.albumId
+  pageError.value = ''
+  if (!id) {
+    albumMeta.value = null
+    memories.value = []
+    collaborators.value = []
+    return
+  }
+
+  const [aRes, mRes] = await Promise.all([apiFetch(`/albums/${id}`), apiFetch(`/albums/${id}/memories`)])
+
+  if (!aRes.ok) {
+    albumMeta.value = null
+    memories.value = []
+    pageError.value = await parseApiError(aRes, 'Albumit ei leitud.')
+    return
+  }
+
+  const albumJson = await aRes.json()
+  albumMeta.value = albumJson.album || null
+
+  if (!mRes.ok) {
+    memories.value = []
+    pageError.value = await parseApiError(mRes, 'Mälestusi ei laaditud.')
+    await loadCollaborators()
+    return
+  }
+
+  const memJson = await mRes.json()
+  memories.value = (memJson.memories || []).map(normalizeMemoryFromApi)
+  await loadCollaborators()
+}
+
+watch(
+  () => route.query.albumId,
+  () => {
+    loadAlbumPage()
+  },
+  { immediate: true },
 )
-
-const memoriesKey = computed(() => `fototeek_memories_${route.query.albumId || 'none'}`)
-
-function loadMemories() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(memoriesKey.value) || '[]')
-    return Array.isArray(parsed) ? parsed : []
-  } catch (error) {
-    return []
-  }
-}
-
-const memories = ref(loadMemories())
+const orderedMemories = computed(() =>
+  [...memories.value].sort((a, b) => Number(a.id || 0) - Number(b.id || 0)),
+)
 const searchQuery = ref('')
+const visibleCount = ref(24)
+const PAGE_SIZE = 24
 const photoClasses = ['one', 'two', 'three', 'four']
 
 function getMemoryTags(memory) {
@@ -45,9 +102,9 @@ function getMemoryTags(memory) {
 
 const filteredMemories = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return memories.value
+  if (!query) return orderedMemories.value
 
-  return memories.value.filter((memory) => {
+  return orderedMemories.value.filter((memory) => {
     const searchable = [memory.title, memory.who, memory.where, ...getMemoryTags(memory)]
       .filter(Boolean)
       .join(' ')
@@ -56,88 +113,309 @@ const filteredMemories = computed(() => {
   })
 })
 
-function saveMemories() {
-  localStorage.setItem(memoriesKey.value, JSON.stringify(memories.value))
-  if (!currentAlbum.value) return
+const visibleMemories = computed(() => filteredMemories.value.slice(0, visibleCount.value))
+const hasMoreMemories = computed(() => filteredMemories.value.length > visibleCount.value)
+const hasAnyMemories = computed(() => memories.value.length > 0)
+const galleryIndex = ref(-1)
+const hasGallery = computed(() => filteredMemories.value.some((memory) => memory.imageUrl || memory.imageThumbUrl))
+const galleryMemories = computed(() => filteredMemories.value.filter((memory) => memory.imageUrl || memory.imageThumbUrl))
+const currentGalleryMemory = computed(() =>
+  galleryIndex.value >= 0 && galleryIndex.value < galleryMemories.value.length
+    ? galleryMemories.value[galleryIndex.value]
+    : null,
+)
 
-  const index = albums.value.findIndex((album) => String(album.id) === String(currentAlbum.value.id))
-  if (index === -1) return
+watch(searchQuery, () => {
+  visibleCount.value = PAGE_SIZE
+})
 
-  albums.value[index] = { ...albums.value[index], memories: memories.value.length }
-  localStorage.setItem(ALBUMS_KEY, JSON.stringify(albums.value))
-}
+async function addMemory() {
+  if (!albumMeta.value?.id || !canEdit.value) return
 
-function addMemory() {
   const nextIndex = memories.value.length + 1
-  memories.value.unshift({
-    id: Date.now(),
-    title: `Uus mälestus ${nextIndex}`,
-    photoClass: photoClasses[nextIndex % photoClasses.length],
-    favorite: false,
-    rotate: nextIndex % 2 ? 'rotate-right' : '',
-    story: '',
-    who: '',
-    when: '',
-    where: '',
+  const res = await apiFetch(`/albums/${albumMeta.value.id}/memories`, {
+    method: 'POST',
+    body: {
+      title: `Uus pilt ${nextIndex}`,
+      photoClass: photoClasses[nextIndex % photoClasses.length],
+      favorite: false,
+      rotate: nextIndex % 2 ? 'rotate-right' : '',
+      story: '',
+      who: '',
+      when: '',
+      where: '',
+      imageUrl: '',
+      imageThumbUrl: '',
+      faceMarkers: [],
+    },
   })
-  saveMemories()
+
+  if (!res.ok) {
+    alert(await parseApiError(res, 'Pildi loomine ebaõnnestus.'))
+    return
+  }
+
+  const data = await res.json()
+  const created = normalizeMemoryFromApi(data.memory)
+  memories.value.push(created)
+  memories.value.sort((a, b) => Number(a.id) - Number(b.id))
+
+  if (albumMeta.value && data.album) {
+    albumMeta.value.memories = data.album.memories
+    albumMeta.value.coverThumbUrl = data.album.coverThumbUrl
+  }
+
+  router.push({
+    path: '/malestus',
+    query: {
+      albumId: route.query.albumId,
+      memoryId: created.id,
+      title: created.title || 'Mälestus',
+    },
+  })
 }
 
-function toggleFavorite(id) {
-  const memory = memories.value.find((item) => item.id === id)
-  if (memory) {
-    memory.favorite = !memory.favorite
-    saveMemories()
+async function deleteLatestMemory() {
+  if (!orderedMemories.value.length || !canEdit.value) return
+
+  const options = orderedMemories.value
+    .map((memory, index) => `${index + 1}. ${memory.title || `Pilt ${index + 1}`}`)
+    .join('\n')
+  const selected = window.prompt(`Vali kustutatav pilt (number):\n${options}`, '')
+  if (selected === null) return
+  const parsedIndex = Number.parseInt(selected.trim(), 10)
+  if (!Number.isInteger(parsedIndex) || parsedIndex < 1 || parsedIndex > orderedMemories.value.length) return
+
+  const target = orderedMemories.value[parsedIndex - 1]
+  const shouldDelete = window.confirm(`Kas kustutada pilt "${target.title || 'Nimetu pilt'}"?`)
+  if (!shouldDelete) return
+
+  const res = await apiFetch(`/memories/${target.id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    alert(await parseApiError(res, 'Kustutamine ebaõnnestus.'))
+    return
   }
+
+  memories.value = memories.value.filter((memory) => String(memory.id) !== String(target.id))
+  const payload = await res.json()
+  if (albumMeta.value && payload.album) {
+    albumMeta.value.memories = payload.album.memories
+    albumMeta.value.coverThumbUrl = payload.album.coverThumbUrl
+  }
+}
+
+async function toggleFavorite(id) {
+  const memory = memories.value.find((item) => item.id === id)
+  if (!memory || !canEdit.value) return
+
+  const next = !memory.favorite
+  const res = await apiFetch(`/memories/${id}`, { method: 'PATCH', body: { favorite: next } })
+  if (!res.ok) return
+
+  memory.favorite = next
+}
+
+async function shareWithUser() {
+  shareNotice.value = ''
+  const email = shareEmail.value.trim()
+  if (!email || !albumMeta.value?.id) return
+
+  const res = await apiFetch(`/albums/${albumMeta.value.id}/share`, {
+    method: 'POST',
+    body: { email, role: 'editor' },
+  })
+
+  if (!res.ok) {
+    shareNotice.value = await parseApiError(res, 'Jagamine ebaõnnestus.')
+    return
+  }
+
+  shareNotice.value = 'Kasutaja sai kutse — ta saab nüüd samasse albumisse pilte lisada.'
+  shareEmail.value = ''
+  await loadCollaborators()
+}
+
+async function removeCollaborator(userId) {
+  if (!albumMeta.value?.id) return
+  const ok = window.confirm('Kas eemaldada see kasutaja albumilt?')
+  if (!ok) return
+
+  const res = await apiFetch(`/albums/${albumMeta.value.id}/share/${userId}`, { method: 'DELETE' })
+  if (!res.ok) {
+    alert(await parseApiError(res, 'Eemaldamine ebaõnnestus.'))
+    return
+  }
+  await loadCollaborators()
+}
+
+function showMoreMemories() {
+  visibleCount.value += PAGE_SIZE
+}
+
+function openGallery() {
+  if (!galleryMemories.value.length) return
+  galleryIndex.value = 0
+}
+
+function closeGallery() {
+  galleryIndex.value = -1
+}
+
+function prevGalleryImage() {
+  if (galleryIndex.value <= 0) return
+  galleryIndex.value -= 1
+}
+
+function nextGalleryImage() {
+  if (galleryIndex.value >= galleryMemories.value.length - 1) return
+  galleryIndex.value += 1
+}
+
+function handleGalleryKeydown(event) {
+  if (galleryIndex.value < 0) return
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    prevGalleryImage()
+  } else if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    nextGalleryImage()
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    closeGallery()
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('keydown', handleGalleryKeydown)
+}
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', handleGalleryKeydown)
+  }
+})
+
+async function logout() {
+  await logoutSession()
+  user.value = null
+  menuOpen.value = false
+  router.push('/')
 }
 </script>
 
 <template>
-  <main class="page">
-    <AppHeader :back-to="'/parand'" />
+  <main class="page page-shell">
+    <div class="header-wrap">
+      <AppHeader
+        :show-auth-links="!isLoggedIn"
+        :show-menu="isLoggedIn"
+        @menu-click="menuOpen = !menuOpen"
+      />
+      <div v-if="isLoggedIn && menuOpen" class="menu-popover">
+        <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
+        <button type="button" @click="logout">Logi välja</button>
+      </div>
+    </div>
 
     <section class="title">
       <p>Perearhiiv</p>
-      <h1>{{ currentAlbum?.title || 'Album' }}</h1>
+      <h1>Minu pildid</h1>
       <p class="subtitle">
         Säilitame sinu pere ajaloo puudutatava olemuse püsivas ja kaunis
         digitaalses arhiivis.
       </p>
+      <RouterLink to="/albumid" class="back-to-albums-btn">Tagasi albumitesse</RouterLink>
     </section>
 
-    <section v-if="!currentAlbum" class="empty-state">
+    <section v-if="pageError && !albumMeta" class="empty-state">
+      <p>{{ pageError }}</p>
+      <RouterLink to="/albumid" class="back-to-albums-btn">Tagasi albumitesse</RouterLink>
+    </section>
+
+    <section v-else-if="!albumMeta" class="empty-state">
       <p>Albumit ei leitud.</p>
       <p>Mine tagasi ja loo album enne, kui lisad mälestusi.</p>
     </section>
 
-    <div v-if="currentAlbum" class="search-wrap">
+    <div v-if="albumMeta" class="search-wrap">
       <input v-model="searchQuery" type="text" placeholder="Otsi nime või koha järgi..." class="search-input" />
     </div>
+    <button v-if="albumMeta && hasGallery" type="button" class="view-large-btn" @click="openGallery">
+      Vaata suurelt
+    </button>
 
-    <section v-if="currentAlbum && filteredMemories.length" class="album-grid">
-      <article v-for="memory in filteredMemories" :key="memory.id" class="polaroid" :class="memory.rotate">
+    <section v-if="albumMeta && filteredMemories.length" class="album-grid">
+      <article v-for="memory in visibleMemories" :key="memory.id" class="polaroid" :class="memory.rotate">
         <RouterLink
           :to="{ path: '/malestus', query: { title: memory.title, albumId: route.query.albumId, memoryId: memory.id } }"
           class="memory-link"
         >
-          <div class="photo" :class="memory.photoClass" />
+          <div class="photo" :class="{ [memory.photoClass]: !memory.imageThumbUrl }">
+            <img
+              v-if="memory.imageThumbUrl"
+              :src="memory.imageThumbUrl"
+              alt=""
+              class="photo-image"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
           <h2>{{ memory.title }}</h2>
           <div v-if="getMemoryTags(memory).length" class="tag-list">
             <span v-for="tag in getMemoryTags(memory)" :key="tag" class="tag-chip">#{{ tag }}</span>
           </div>
         </RouterLink>
-        <button type="button" class="fav-btn" @click="toggleFavorite(memory.id)">
+        <button v-if="canEdit" type="button" class="fav-btn" @click="toggleFavorite(memory.id)">
           {{ memory.favorite ? '★' : '☆' }}
         </button>
       </article>
     </section>
-    <section v-else-if="currentAlbum" class="empty-state">
+    <button v-if="albumMeta && hasMoreMemories" type="button" class="load-more-btn" @click="showMoreMemories">
+      Laadi juurde
+    </button>
+    <section v-else-if="albumMeta && !hasAnyMemories" class="empty-state">
       <p>Selles albumis pole veel mälestusi.</p>
       <p>Lisa esimene mälestus, et album täituma hakkaks.</p>
     </section>
-    <button v-if="currentAlbum" type="button" class="create-btn" @click="addMemory">
-      Lisa mälestus
-    </button>
+    <div v-if="albumMeta && canEdit" class="album-actions">
+      <button type="button" class="create-btn" @click="addMemory">Lisa pilt</button>
+      <button v-if="hasAnyMemories" type="button" class="delete-btn" @click="deleteLatestMemory">Kustuta pilt</button>
+    </div>
+
+    <section v-if="albumMeta && albumMeta.myRole === 'owner'" class="share-panel">
+      <h3 class="share-heading">Jaga albumit</h3>
+      <p class="share-intro">
+        Sisesta registreerunud kasutaja e-post. Ta saab lisada pilte ja mälestusi samasse albumisse.
+      </p>
+      <div class="share-row">
+        <input v-model="shareEmail" type="email" class="share-input" placeholder="partner@example.com" />
+        <button type="button" class="share-submit" @click="shareWithUser">Jaga</button>
+      </div>
+      <p v-if="shareNotice" class="share-notice">{{ shareNotice }}</p>
+      <ul v-if="collaborators.length" class="collab-list">
+        <li v-for="c in collaborators" :key="c.userId" class="collab-item">
+          <span>{{ c.name }} ({{ c.email }}) — {{ c.role === 'editor' ? 'saab lisada pilte' : 'vaataja' }}</span>
+          <button type="button" class="collab-remove" @click="removeCollaborator(c.userId)">Eemalda</button>
+        </li>
+      </ul>
+    </section>
+
+    <div v-if="currentGalleryMemory" class="gallery-overlay" @click.self="closeGallery">
+      <button type="button" class="gallery-close" @click="closeGallery">×</button>
+      <button type="button" class="gallery-arrow" :disabled="galleryIndex <= 0" @click="prevGalleryImage">←</button>
+      <figure class="gallery-figure">
+        <img :src="currentGalleryMemory.imageUrl || currentGalleryMemory.imageThumbUrl" alt="" class="gallery-image" />
+        <figcaption>{{ currentGalleryMemory.title || 'Pilt' }}</figcaption>
+      </figure>
+      <button
+        type="button"
+        class="gallery-arrow"
+        :disabled="galleryIndex >= galleryMemories.length - 1"
+        @click="nextGalleryImage"
+      >
+        →
+      </button>
+    </div>
 
     <footer class="footer">
       <nav>
@@ -145,7 +423,6 @@ function toggleFavorite(id) {
         <a href="#">Privaatsus</a>
         <a href="#">Eetika</a>
       </nav>
-      <p class="bookmark">◫</p>
       <p class="copyright">© 2025 Fototeek</p>
       <p class="note">Hoiame meie esivanemate lugusid.</p>
     </footer>
@@ -153,12 +430,41 @@ function toggleFavorite(id) {
 </template>
 
 <style scoped>
-.page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 16px 14px 28px;
-  color: #1c1714;
-  font-family: Georgia, 'Times New Roman', serif;
+.header-wrap {
+  position: relative;
+}
+
+.menu-popover {
+  position: absolute;
+  right: 0;
+  top: 28px;
+  min-width: 130px;
+  background: var(--surface-strong, #fff);
+  border: 1px solid var(--line-soft, #ddd4c6);
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.menu-popover a,
+.menu-popover button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--ink, #231f20);
+  text-decoration: none;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.menu-popover a:hover,
+.menu-popover button:hover {
+  background: var(--paper-bg, #f5f2ee);
 }
 
 .title {
@@ -192,6 +498,27 @@ function toggleFavorite(id) {
   line-height: 1.3;
 }
 
+.back-to-albums-btn {
+  margin: 16px auto 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #f8f4ed;
+  color: #3f342d;
+  text-decoration: none;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 10px 16px;
+}
+
+.back-to-albums-btn:hover {
+  background: #f1ebdf;
+}
+
 .album-grid {
   margin-top: 24px;
   display: grid;
@@ -219,6 +546,21 @@ function toggleFavorite(id) {
 
 .search-wrap {
   margin-top: 18px;
+}
+
+.view-large-btn {
+  margin: 12px auto 0;
+  display: block;
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #f8f4ed;
+  color: #3f342d;
+  padding: 10px 20px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
 }
 
 .search-input {
@@ -275,6 +617,13 @@ function toggleFavorite(id) {
 .photo {
   height: 145px;
   border: 1px solid #d9d3c6;
+}
+
+.photo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .one {
@@ -335,8 +684,200 @@ function toggleFavorite(id) {
   cursor: pointer;
 }
 
+.album-actions {
+  margin-top: 22px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.album-actions .create-btn {
+  margin-top: 0;
+  width: auto;
+  min-width: 200px;
+  padding: 17px 16px;
+}
+
+.share-panel {
+  margin: 28px auto 0;
+  max-width: 420px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #f5f2eb;
+  border: 1px solid #ddd4c6;
+}
+
+.share-heading {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d2622;
+}
+
+.share-intro {
+  margin: 8px 0 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #53473f;
+}
+
+.share-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.share-input {
+  flex: 1;
+  min-width: 180px;
+  border: 1px solid #d8d2c5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  background: #fff;
+}
+
+.share-submit {
+  border: 1px solid #1e130c;
+  border-radius: 999px;
+  background: #1e130c;
+  color: #fff;
+  padding: 10px 18px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.share-notice {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: #3d5a40;
+}
+
+.collab-list {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.collab-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid #e5dfd4;
+  font-size: 12px;
+}
+
+.collab-remove {
+  flex-shrink: 0;
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #fff;
+  padding: 6px 10px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.delete-btn {
+  border: 1px solid #d6ccbe;
+  border-radius: 12px;
+  background: #f8f4ed;
+  color: #3f342d;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 200px;
+  padding: 17px 16px;
+  cursor: pointer;
+}
+
+.load-more-btn {
+  margin: 16px auto 0;
+  display: block;
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #f8f4ed;
+  color: #3f342d;
+  padding: 10px 20px;
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+
+.gallery-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 16, 14, 0.82);
+  z-index: 50;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+
+.gallery-close {
+  position: absolute;
+  right: 16px;
+  top: 14px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.gallery-arrow {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.2);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.gallery-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.gallery-figure {
+  margin: 0;
+}
+
+.gallery-image {
+  width: 100%;
+  max-height: min(80vh, 920px);
+  object-fit: contain;
+  display: block;
+}
+
+.gallery-figure figcaption {
+  margin-top: 10px;
+  text-align: center;
+  color: #f3ece2;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  font-size: 24px;
+}
+
 .footer {
-  margin-top: 52px;
+  margin-top: 62px;
+  border-top: 1px solid var(--line-soft, #dad6cd);
+  padding-top: 28px;
   text-align: center;
 }
 
@@ -347,40 +888,33 @@ function toggleFavorite(id) {
   text-transform: uppercase;
   letter-spacing: 0.13em;
   font-size: 10px;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-weight: 500;
 }
 
 .footer a {
-  color: #1c1714;
+  color: var(--ink, #231f20);
   text-decoration: none;
 }
 
-.bookmark {
-  margin-top: 14px;
-  color: #8e8276;
-}
-
 .copyright {
-  margin-top: 12px;
+  margin-top: 20px;
   text-transform: uppercase;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.12em;
   font-size: 9px;
-  font-family: Arial, sans-serif;
-  color: #7f7266;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: #5c534d;
 }
 
 .note {
-  margin-top: 6px;
+  margin-top: 8px;
   font-style: italic;
-  font-size: 12px;
-  color: #938578;
+  font-size: 13px;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  color: #655a52;
 }
 
-@media (min-width: 768px) {
-  .page {
-    padding: 28px 28px 40px;
-  }
-
+@media (min-width: 640px) {
   .title h1 {
     font-size: 72px;
   }
@@ -398,4 +932,5 @@ function toggleFavorite(id) {
     height: 210px;
   }
 }
+
 </style>

@@ -54,9 +54,22 @@ defineEmits(['menu-click'])
 
 <style scoped>
 .topbar {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  min-height: 64px;
+  
+}
+
+.topbar::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 50vw);
+  bottom: 0;
+  width: 100vw;
+  border-bottom: 1px solid var(--line-soft, #e4ddd1);
+  pointer-events: none;
 }
 
 .icon-link {
@@ -73,6 +86,8 @@ defineEmits(['menu-click'])
   padding: 0;
   font-size: 24px;
   line-height: 1;
+  position: relative;
+  top: -12px;
 }
 
 .icon-link svg {
@@ -83,6 +98,8 @@ defineEmits(['menu-click'])
 .left-spacer {
   width: 32px;
   height: 32px;
+  position: relative;
+  top: -12px;
 }
 
 .brand-link {
@@ -91,6 +108,8 @@ defineEmits(['menu-click'])
   gap: 10px;
   text-decoration: none;
   color: inherit;
+  position: relative;
+  top: -12px;
 }
 
 .brand-link:visited,
@@ -128,21 +147,33 @@ defineEmits(['menu-click'])
   letter-spacing: 0.08em;
   font-family: var(--font-sans, 'Inter', sans-serif);
   font-size: 11px;
+  min-height: 34px;
+  position: relative;
+  top: -12px;
 }
 
 .auth-links a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
   color: var(--ink, #231f20);
   text-decoration: none;
+  line-height: 1;
 }
 
 .auth-links .register {
   background: #231f20;
   color: #faf8f5;
   border-radius: 999px;
-  padding: 8px 14px;
+  padding: 0 14px;
 }
 
 @media (min-width: 768px) {
+  .topbar {
+    min-height: 66px;
+  }
+
   .icon-link,
   .left-spacer {
     width: 34px;
@@ -171,10 +202,12 @@ defineEmits(['menu-click'])
     gap: 16px;
     font-size: 12px;
     letter-spacing: 0.08em;
+    min-height: 36px;
   }
 
   .auth-links .register {
-    padding: 9px 16px;
+    min-height: 36px;
+    padding: 0 16px;
   }
 }
 
@@ -195,10 +228,12 @@ defineEmits(['menu-click'])
   .auth-links {
     gap: 18px;
     font-size: 13px;
+    min-height: 38px;
   }
 
   .auth-links .register {
-    padding: 10px 18px;
+    min-height: 38px;
+    padding: 0 18px;
   }
 }
 </style>

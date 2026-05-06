@@ -6,13 +6,43 @@
 }
 
 :root {
-  --paper-bg: #f5f2ee;
+  --paper-bg: #f2f0eb;
+  --surface: #f8f7f4;
+  --surface-strong: #ffffff;
+  --line-soft: #e4ddd1;
+  --muted-ink: #5a5048;
   --ink: #231f20;
   --font-serif: 'EB Garamond', Georgia, 'Times New Roman', serif;
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+html {
+  overflow-y: scroll;
+}
+
 body {
   background: var(--paper-bg);
   color: var(--ink);
+  overflow-x: clip;
+  scrollbar-gutter: stable;
+}
+
+.page-shell {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 20px 20px 30px;
+  color: var(--ink, #231f20);
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+}
+
+@media (min-width: 640px) {
+  .page-shell {
+    padding: 26px 32px 20px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .page-shell {
+    padding: 26px 42px 28px;
+  }
 }

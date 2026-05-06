@@ -1,50 +1,363 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
+import { apiFetch, getToken, logoutSession, normalizeMemoryFromApi } from '@/api/fototeekApi.js'
 
 const route = useRoute()
-const memoriesKey = computed(() => `fototeek_memories_${route.query.albumId || 'none'}`)
-const liked = ref(false)
+const router = useRouter()
 const editing = ref(false)
 const story = ref('')
 const storyInput = ref(null)
 const whoInput = ref(null)
 const whenInput = ref(null)
 const whereInput = ref(null)
+const titleInput = ref(null)
+const whoNameInput = ref(null)
 const who = ref('')
 const when = ref('')
 const where = ref('')
 const title = ref('')
+const editingTitle = ref(false)
+const user = ref(null)
+const menuOpen = ref(false)
+const imageUrl = ref('')
+const imageThumbUrl = ref('')
+const fileInput = ref(null)
+const markingFace = ref(false)
+const faceMarkers = ref([])
+const pendingFaceName = ref('')
+const draftWhoName = ref('')
+const dragFaceStart = ref(null)
+const draftFaceMarker = ref(null)
 
-function loadMemories() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(memoriesKey.value) || '[]')
-    return Array.isArray(parsed) ? parsed : []
-  } catch (error) {
-    return []
-  }
+try {
+  user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
+} catch (error) {
+  user.value = null
 }
 
-const memories = ref(loadMemories())
+const isLoggedIn = computed(() => Boolean(user.value && getToken()))
+
+function suggestedNameFromWho(rawWho) {
+  const raw = String(rawWho || '').trim()
+  if (!raw) return 'Nimi puudu'
+  return raw.split(',')[0].trim() || 'Nimi puudu'
+}
+
+const memories = ref([])
+const orderedMemories = computed(() =>
+  [...memories.value].sort((a, b) => Number(a?.id || 0) - Number(b?.id || 0)),
+)
 
 const currentMemory = computed(() =>
   memories.value.find((item) => String(item.id) === String(route.query.memoryId)),
 )
+const currentMemoryIndex = computed(() =>
+  orderedMemories.value.findIndex((item) => String(item.id) === String(route.query.memoryId)),
+)
 
-const memoryTitle = computed(() => title.value || route.query.title || 'Mälestus')
+const albumMyRole = ref(null)
 
-function shareMemory() {
-  const url = window.location.href
-  if (navigator.share) {
-    navigator.share({ title: String(memoryTitle.value), url })
+async function refreshMemoriesFromApi() {
+  const aid = route.query.albumId
+  if (!aid) {
+    memories.value = []
     return
   }
-  navigator.clipboard.writeText(url)
+  const res = await apiFetch(`/albums/${aid}/memories`)
+  if (!res.ok) {
+    memories.value = []
+    return
+  }
+  const data = await res.json()
+  memories.value = (data.memories || []).map(normalizeMemoryFromApi).filter(Boolean)
 }
 
+async function refreshAlbumAccess() {
+  const aid = route.query.albumId
+  if (!aid) {
+    albumMyRole.value = null
+    return
+  }
+  const res = await apiFetch(`/albums/${aid}`)
+  if (!res.ok) {
+    albumMyRole.value = null
+    return
+  }
+  const data = await res.json()
+  albumMyRole.value = data.album?.myRole ?? null
+}
+
+watch(
+  () => route.query.albumId,
+  () => {
+    void Promise.all([refreshMemoriesFromApi(), refreshAlbumAccess()])
+  },
+  { immediate: true },
+)
+
+const canEditMemory = computed(() => albumMyRole.value === 'owner' || albumMyRole.value === 'editor')
+
+let memorySaveTimer = null
+
+async function flushSaveCurrentMemory() {
+  if (!currentMemory.value?.id) return
+
+  const id = currentMemory.value.id
+  const body = {
+    title: title.value,
+    story: story.value,
+    who: who.value,
+    when: when.value,
+    where: where.value,
+    imageUrl: imageUrl.value,
+    imageThumbUrl: imageThumbUrl.value,
+    faceMarkers: faceMarkers.value,
+  }
+
+  const res = await apiFetch(`/memories/${id}`, { method: 'PATCH', body })
+  if (!res.ok) return
+
+  try {
+    const json = await res.json()
+    if (json?.memory) {
+      const normalized = normalizeMemoryFromApi(json.memory)
+      const idx = memories.value.findIndex((m) => String(m.id) === String(id))
+      if (idx !== -1 && normalized) {
+        memories.value[idx] = normalized
+      }
+    }
+  } catch (error) {
+    // ignore JSON errors
+  }
+}
+
+function scheduleSaveCurrentMemory() {
+  clearTimeout(memorySaveTimer)
+  memorySaveTimer = setTimeout(() => {
+    void flushSaveCurrentMemory()
+  }, 450)
+}
+
+const memoryTitle = computed(() => title.value || route.query.title || 'Mälestus')
+const whoNames = computed(() =>
+  who.value
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean),
+)
 function downloadPlaceholder() {
-  alert('Allalaadimine lisatakse peagi.')
+  if (!imageUrl.value) {
+    alert('Allalaadimiseks lisa kõigepealt pilt.')
+    return
+  }
+
+  const link = document.createElement('a')
+  link.href = imageUrl.value
+  const safeTitle = String(memoryTitle.value || 'malestus')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  link.download = `${safeTitle || 'malestus'}.webp`
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
+
+function openImagePicker() {
+  if (!canEditMemory.value) return
+  fileInput.value?.click()
+}
+
+function getPointerPercent(event) {
+  const rect = event.currentTarget.getBoundingClientRect()
+  const x = ((event.clientX - rect.left) / rect.width) * 100
+  const y = ((event.clientY - rect.top) / rect.height) * 100
+  return {
+    x: Math.min(100, Math.max(0, x)),
+    y: Math.min(100, Math.max(0, y)),
+  }
+}
+
+function updateDraftFaceMarker(current) {
+  if (!dragFaceStart.value) return
+  const start = dragFaceStart.value
+  const width = Math.abs(current.x - start.x)
+  const height = Math.abs(current.y - start.y)
+  const centerX = (start.x + current.x) / 2
+  const centerY = (start.y + current.y) / 2
+  draftFaceMarker.value = {
+    x: centerX,
+    y: centerY,
+    width: Math.max(width, 4),
+    height: Math.max(height, 4),
+    name: pendingFaceName.value || 'Nimi puudu',
+  }
+}
+
+function onFaceDragStart(event) {
+  if (!canEditMemory.value || !markingFace.value || !imageUrl.value) return
+  const point = getPointerPercent(event)
+  dragFaceStart.value = point
+  draftFaceMarker.value = {
+    x: point.x,
+    y: point.y,
+    width: 4,
+    height: 4,
+    name: pendingFaceName.value || 'Nimi puudu',
+  }
+}
+
+function onFaceDragMove(event) {
+  if (!dragFaceStart.value) return
+  updateDraftFaceMarker(getPointerPercent(event))
+}
+
+function onFaceDragEnd() {
+  if (!dragFaceStart.value || !draftFaceMarker.value) return
+  faceMarkers.value.push({
+    id: Date.now(),
+    ...draftFaceMarker.value,
+  })
+  dragFaceStart.value = null
+  draftFaceMarker.value = null
+  markingFace.value = false
+  pendingFaceName.value = ''
+  saveCurrentMemory()
+}
+
+function loadImageFromFile(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      resolve(img)
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('Pildi laadimine ebaõnnestus.'))
+    }
+    img.src = url
+  })
+}
+
+function resizeImageToDataUrl(image, maxSide, quality = 0.82) {
+  const largestSide = Math.max(image.naturalWidth, image.naturalHeight)
+  const scale = largestSide > maxSide ? maxSide / largestSide : 1
+  const width = Math.max(1, Math.round(image.naturalWidth * scale))
+  const height = Math.max(1, Math.round(image.naturalHeight * scale))
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return ''
+  ctx.drawImage(image, 0, 0, width, height)
+  return canvas.toDataURL('image/webp', quality)
+}
+
+async function onImageSelected(event) {
+  if (!canEditMemory.value) return
+  const [file] = event.target.files || []
+  if (!file) return
+  if (!file.type.startsWith('image/')) return
+
+  try {
+    const image = await loadImageFromFile(file)
+    imageUrl.value = resizeImageToDataUrl(image, 1600, 0.82)
+    imageThumbUrl.value = resizeImageToDataUrl(image, 480, 0.72)
+    saveCurrentMemory()
+  } catch (error) {
+    alert('Pildi lisamine ebaõnnestus. Proovi teise failiga.')
+  } finally {
+    event.target.value = ''
+  }
+}
+
+async function logout() {
+  await logoutSession()
+  user.value = null
+  menuOpen.value = false
+  router.push('/')
+}
+
+function startEditingTitle() {
+  if (!canEditMemory.value) return
+  editingTitle.value = true
+  nextTick(() => {
+    titleInput.value?.focus()
+    titleInput.value?.select?.()
+  })
+}
+
+function saveTitle() {
+  title.value = title.value.trim() || 'Mälestus'
+  editingTitle.value = false
+  saveCurrentMemory()
+}
+
+function markFace() {
+  if (!canEditMemory.value) return
+  if (!imageUrl.value) {
+    alert('Lisa enne pilt, siis saad nägu märkida.')
+    return
+  }
+  if (whoNames.value.length) {
+    const options = whoNames.value.map((name, index) => `${index + 1}. ${name}`).join('\n')
+    const entered = window.prompt(`Kelle nägu märgid?\nSisesta nimi või number:\n${options}`, '')
+    if (entered === null) return
+    const cleaned = entered.trim()
+    if (!cleaned) return
+    const asIndex = Number.parseInt(cleaned, 10)
+    if (Number.isInteger(asIndex) && asIndex >= 1 && asIndex <= whoNames.value.length) {
+      pendingFaceName.value = whoNames.value[asIndex - 1]
+    } else {
+      pendingFaceName.value = cleaned
+    }
+  } else {
+    const entered = window.prompt('Kelle nägu märgid?', '')
+    if (entered === null) return
+    pendingFaceName.value = entered.trim() || 'Nimi puudu'
+  }
+  markingFace.value = true
+}
+
+function goBackToAlbum() {
+  router.push({ path: '/album', query: { albumId: route.query.albumId } })
+}
+
+function goToAdjacentMemory(direction) {
+  if (!orderedMemories.value.length || currentMemoryIndex.value === -1) return
+  const nextIndex = currentMemoryIndex.value + direction
+  if (nextIndex < 0 || nextIndex >= orderedMemories.value.length) return
+  const target = orderedMemories.value[nextIndex]
+  router.push({
+    path: '/malestus',
+    query: {
+      albumId: route.query.albumId,
+      memoryId: target.id,
+      title: target.title || 'Mälestus',
+    },
+  })
+}
+
+function removeFaceMarker(markerId) {
+  if (!canEditMemory.value) return
+  faceMarkers.value = faceMarkers.value.filter((marker) => marker.id !== markerId)
+  saveCurrentMemory()
+}
+
+function removeImage() {
+  if (!canEditMemory.value) return
+  imageUrl.value = ''
+  imageThumbUrl.value = ''
+  faceMarkers.value = []
+  markingFace.value = false
+  pendingFaceName.value = ''
+  draftFaceMarker.value = null
+  dragFaceStart.value = null
+  saveCurrentMemory()
 }
 
 function saveCurrentMemory() {
@@ -55,30 +368,59 @@ function saveCurrentMemory() {
 
   memories.value[index] = {
     ...memories.value[index],
+    title: title.value,
     story: story.value,
     who: who.value,
     when: when.value,
     where: where.value,
+    imageUrl: imageUrl.value,
+    imageThumbUrl: imageThumbUrl.value,
+    faceMarkers: faceMarkers.value,
   }
-  localStorage.setItem(memoriesKey.value, JSON.stringify(memories.value))
+  if (canEditMemory.value) {
+    scheduleSaveCurrentMemory()
+  }
 }
 
 function toggleEditing() {
+  if (!canEditMemory.value) return
   if (editing.value) saveCurrentMemory()
   editing.value = !editing.value
 }
 
 function startEditing(field) {
+  if (!canEditMemory.value) return
   editing.value = true
   nextTick(() => {
     const fieldMap = {
       story: storyInput.value,
-      who: whoInput.value,
+      who: whoNameInput.value,
       when: whenInput.value,
       where: whereInput.value,
     }
     fieldMap[field]?.focus()
   })
+}
+
+function syncWhoFromNames(names) {
+  who.value = names.join(', ')
+  saveCurrentMemory()
+}
+
+function addWhoName() {
+  const nextName = draftWhoName.value.trim()
+  if (!nextName) return
+  syncWhoFromNames([...whoNames.value, nextName])
+  draftWhoName.value = ''
+  nextTick(() => whoNameInput.value?.focus())
+}
+
+function removeWhoName(nameToRemove) {
+  const index = whoNames.value.findIndex((name) => name === nameToRemove)
+  if (index === -1) return
+  const next = [...whoNames.value]
+  next.splice(index, 1)
+  syncWhoFromNames(next)
 }
 
 watch(
@@ -89,26 +431,134 @@ watch(
     when.value = memory?.when || ''
     where.value = memory?.where || ''
     title.value = memory?.title || ''
+    imageUrl.value = memory?.imageUrl || ''
+    imageThumbUrl.value = memory?.imageThumbUrl || ''
+    if (Array.isArray(memory?.faceMarkers)) {
+      faceMarkers.value = memory.faceMarkers.map((marker) => ({
+        ...marker,
+        size: Number(marker?.size) > 0 ? Number(marker.size) : 64,
+      }))
+    } else if (memory?.faceMarker) {
+      faceMarkers.value = [
+        { id: Date.now(), ...memory.faceMarker, name: suggestedNameFromWho(memory?.who), size: 64 },
+      ]
+    } else {
+      faceMarkers.value = []
+    }
+    markingFace.value = false
+    pendingFaceName.value = ''
+    dragFaceStart.value = null
+    draftFaceMarker.value = null
   },
   { immediate: true },
 )
 </script>
 
 <template>
-  <main class="page">
-    <AppHeader :back-to="{ path: '/albumid', query: { albumId: route.query.albumId } }" />
+  <main class="page page-shell">
+    <div class="header-wrap">
+      <AppHeader
+        :show-auth-links="!isLoggedIn"
+        :show-menu="isLoggedIn"
+        @menu-click="menuOpen = !menuOpen"
+      />
+      <div v-if="isLoggedIn && menuOpen" class="menu-popover">
+        <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
+        <button type="button" @click="logout">Logi välja</button>
+      </div>
+    </div>
 
-    <section class="hero-card">
-      <div class="photo" />
-      <p>{{ memoryTitle }}</p>
+    <section class="hero-stack">
+      <section class="hero-card">
+        <div
+          class="hero-photo"
+          :class="{ 'marking-face': markingFace, 'has-image': imageUrl }"
+          @pointerdown="onFaceDragStart"
+          @pointermove="onFaceDragMove"
+          @pointerup="onFaceDragEnd"
+          @pointercancel="onFaceDragEnd"
+          @pointerleave="onFaceDragEnd"
+        >
+          <img v-if="imageUrl" :src="imageUrl" alt="" class="hero-photo-img" />
+          <span
+            v-for="marker in faceMarkers"
+            :key="marker.id"
+            class="face-marker"
+            :class="{ visible: markingFace }"
+            :style="{
+              left: `${marker.x}%`,
+              top: `${marker.y}%`,
+              width: `${marker.width || 8}%`,
+              height: `${marker.height || 8}%`,
+            }"
+          >
+            <span class="face-marker-label">{{ marker.name }}</span>
+            <button
+              v-if="canEditMemory"
+              type="button"
+              class="face-marker-remove"
+              aria-label="Eemalda see märge"
+              @click.stop="removeFaceMarker(marker.id)"
+            >
+              ×
+            </button>
+          </span>
+          <span
+            v-if="draftFaceMarker"
+            class="face-marker visible draft"
+            :style="{
+              left: `${draftFaceMarker.x}%`,
+              top: `${draftFaceMarker.y}%`,
+              width: `${draftFaceMarker.width}%`,
+              height: `${draftFaceMarker.height}%`,
+            }"
+          >
+            <span class="face-marker-label">{{ draftFaceMarker.name }}</span>
+          </span>
+        </div>
+        <input ref="fileInput" type="file" accept="image/*" class="sr-only" @change="onImageSelected" />
+        <p v-if="!editingTitle" class="memory-title editable-value" @click="startEditingTitle">{{ memoryTitle }}</p>
+        <input
+          v-else
+          ref="titleInput"
+          v-model="title"
+          type="text"
+          class="memory-title-input"
+          @blur="saveTitle"
+          @keydown.enter.prevent="saveTitle"
+        />
+      </section>
+      <section v-if="orderedMemories.length > 1" class="gallery-nav">
+        <button
+          type="button"
+          class="gallery-arrow"
+          :disabled="currentMemoryIndex <= 0"
+          @click="goToAdjacentMemory(-1)"
+        >
+          ← Eelmine
+        </button>
+        <p>{{ currentMemoryIndex + 1 }} / {{ orderedMemories.length }}</p>
+        <button
+          type="button"
+          class="gallery-arrow"
+          :disabled="currentMemoryIndex >= orderedMemories.length - 1"
+          @click="goToAdjacentMemory(1)"
+        >
+          Järgmine →
+        </button>
+      </section>
     </section>
+
+    <p v-if="albumMyRole === 'viewer'" class="viewer-banner">
+      Oled selle jagatud albumi vaatajana — mälestuse teksti ja pilte sa muuta ei saa.
+    </p>
 
     <section class="title">
       <p>Sinu pärand</p>
       <h1>Säilitame sinu pereloo ajatuid niite.</h1>
       <p v-if="!editing && story" class="story editable-value" @click="startEditing('story')">{{ story }}</p>
       <p v-else-if="!editing" class="story placeholder editable-value" @click="startEditing('story')">
-        Lisa siia mälestuse lugu...
+        Lisa siia pildi lugu...
       </p>
       <textarea
         v-else
@@ -116,7 +566,7 @@ watch(
         v-model="story"
         class="story-editor"
         rows="5"
-        placeholder="Lisa siia mälestuse lugu..."
+        placeholder="Lisa siia pildi lugu..."
       />
     </section>
 
@@ -125,11 +575,31 @@ watch(
         <span class="icon">👥</span>
         <div>
           <p class="label">Kes</p>
-          <p v-if="!editing && who" class="editable-value" @click="startEditing('who')">{{ who }}</p>
+          <div v-if="!editing && whoNames.length" class="who-chips editable-value" @click="startEditing('who')">
+            <span v-for="name in whoNames" :key="name" class="who-chip">{{ name }}</span>
+          </div>
           <p v-else-if="!editing" class="editable-value placeholder-text" @click="startEditing('who')">
             Lisa siia, kes on fotol...
           </p>
-          <input v-else ref="whoInput" v-model="who" type="text" class="field-input" />
+          <div v-else class="who-edit-wrap">
+            <div v-if="whoNames.length" class="who-chips">
+              <span v-for="name in whoNames" :key="name" class="who-chip editing">
+                {{ name }}
+                <button type="button" class="chip-remove-btn" @click="removeWhoName(name)">×</button>
+              </span>
+            </div>
+            <div class="who-input-row">
+              <input
+                ref="whoNameInput"
+                v-model="draftWhoName"
+                type="text"
+                class="field-input"
+                placeholder="Lisa nimi..."
+                @keydown.enter.prevent="addWhoName"
+              />
+              <button type="button" class="add-name-btn" @click="addWhoName">Lisa</button>
+            </div>
+          </div>
         </div>
       </article>
       <article class="info-card">
@@ -156,13 +626,21 @@ watch(
       </article>
     </section>
 
-    <section class="actions">
-      <button type="button" class="action-btn" @click="liked = !liked">{{ liked ? '♥' : '♡' }}</button>
-      <button type="button" class="action-btn" @click="shareMemory">↗</button>
-      <button type="button" class="action-btn edit" @click="toggleEditing">
-        {{ editing ? 'Salvesta' : 'Muuda' }}
-      </button>
-      <button type="button" class="action-btn" @click="downloadPlaceholder">⇩</button>
+    <section class="action-stack">
+      <div class="actions">
+        <button v-if="canEditMemory" type="button" class="action-btn edit" @click="toggleEditing">
+          {{ editing ? 'Salvesta' : 'Muuda' }}
+        </button>
+        <button type="button" class="action-btn" @click="downloadPlaceholder">⇩</button>
+      </div>
+      <div class="secondary-actions">
+        <template v-if="canEditMemory">
+          <button type="button" class="secondary-btn" @click="openImagePicker">Lisa pilt</button>
+          <button v-if="imageUrl" type="button" class="secondary-btn" @click="removeImage">Eemalda pilt</button>
+          <button type="button" class="secondary-btn" @click="markFace">Märgi nägu</button>
+        </template>
+        <button type="button" class="secondary-btn" @click="goBackToAlbum">Piltide juurde</button>
+      </div>
     </section>
 
     <footer class="footer">
@@ -171,7 +649,6 @@ watch(
         <a href="#">Privaatsus</a>
         <a href="#">Eetika</a>
       </nav>
-      <p class="bookmark">◫</p>
       <p class="copyright">© 2025 Fototeek</p>
       <p class="note">Hoiame meie esivanemate lugusid.</p>
     </footer>
@@ -179,25 +656,162 @@ watch(
 </template>
 
 <style scoped>
-.page {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 16px 14px 28px;
-  color: #1c1714;
-  font-family: Georgia, 'Times New Roman', serif;
+.header-wrap {
+  position: relative;
+}
+
+.menu-popover {
+  position: absolute;
+  right: 0;
+  top: 28px;
+  min-width: 130px;
+  background: var(--surface-strong, #fff);
+  border: 1px solid var(--line-soft, #ddd4c6);
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
+  overflow: hidden;
+  z-index: 10;
+}
+
+.menu-popover a,
+.menu-popover button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--ink, #231f20);
+  text-decoration: none;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.menu-popover a:hover,
+.menu-popover button:hover {
+  background: var(--paper-bg, #f5f2ee);
 }
 
 .hero-card {
   margin-top: 24px;
   background: #f3f0e8;
   box-shadow: 0 6px 14px rgba(19, 11, 8, 0.14);
-  padding: 11px 11px 16px;
+  padding: 12px 12px 16px;
+  width: min(100%, 560px);
 }
 
-.photo {
-  height: 350px;
+.hero-stack {
+  margin-top: 24px;
+}
+
+.hero-photo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
   border: 1px solid #d9d3c6;
-  background: linear-gradient(180deg, #cc9a7d 0%, #d8a587 45%, #e2b08f 100%);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.hero-photo.has-image {
+  aspect-ratio: auto;
+  height: auto;
+  background: transparent;
+  display: block;
+}
+
+.hero-photo.marking-face {
+  outline: 2px dashed rgba(60, 44, 35, 0.55);
+  outline-offset: -6px;
+  cursor: crosshair;
+}
+
+.hero-photo-img {
+  width: 100%;
+  height: auto;
+  object-fit: initial;
+  display: block;
+}
+
+.hero-photo-placeholder {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: rgba(60, 44, 35, 0.78);
+  background: rgba(248, 244, 237, 0.82);
+  border: 1px solid rgba(214, 204, 190, 0.9);
+  border-radius: 999px;
+  padding: 10px 14px;
+}
+
+.face-marker {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fff;
+  border-radius: 6px;
+  background: rgba(30, 19, 12, 0.14);
+  box-shadow: 0 0 0 2px rgba(30, 19, 12, 0.35);
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.hero-photo:hover .face-marker,
+.face-marker.visible {
+  opacity: 1;
+}
+
+.face-marker-label {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 6px);
+  transform: translateX(-50%);
+  background: rgba(30, 19, 12, 0.9);
+  color: #fff;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.face-marker-remove {
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  width: 20px;
+  height: 20px;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  background: rgba(30, 19, 12, 0.95);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hero-card p {
@@ -205,6 +819,59 @@ watch(
   text-align: center;
   font-style: italic;
   color: #5f5349;
+}
+
+.memory-title {
+  cursor: text;
+}
+
+.memory-title-input {
+  margin-top: 12px;
+  width: 100%;
+  border: 1px solid #d8d2c5;
+  border-radius: 10px;
+  background: #f8f6f0;
+  padding: 8px 10px;
+  text-align: center;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  font-size: 18px;
+  font-style: italic;
+  color: #5f5349;
+}
+
+.gallery-nav {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.gallery-nav p {
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5e5348;
+}
+
+.gallery-arrow {
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #f8f4ed;
+  color: #3f342d;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.gallery-arrow:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .title {
@@ -221,8 +888,8 @@ watch(
 
 .title h1 {
   margin-top: 16px;
-  font-size: 52px;
-  line-height: 1.02;
+  font-size: 46px;
+  line-height: 1.04;
   font-weight: 500;
 }
 
@@ -250,6 +917,63 @@ watch(
   color: #8f8478;
 }
 
+.who-chips {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.who-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #d8d2c5;
+  border-radius: 999px;
+  background: #f8f6f0;
+  padding: 4px 9px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 11px;
+  color: #3f342d;
+}
+
+.who-chip.editing {
+  background: #efe8dc;
+}
+
+.who-edit-wrap {
+  margin-top: 4px;
+}
+
+.who-input-row {
+  margin-top: 6px;
+  display: flex;
+  gap: 6px;
+}
+
+.chip-remove-btn {
+  border: 0;
+  background: transparent;
+  color: #5b4f45;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+}
+
+.add-name-btn {
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #f8f4ed;
+  color: #3f342d;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 10px;
+  cursor: pointer;
+}
+
 .story-editor {
   margin: 16px auto 0;
   display: block;
@@ -274,7 +998,7 @@ watch(
   gap: 12px;
   background: #f4f1ea;
   border-radius: 12px;
-  padding: 13px 14px;
+  padding: 11px 12px;
 }
 
 .icon {
@@ -311,11 +1035,51 @@ watch(
   font-family: Georgia, 'Times New Roman', serif;
 }
 
+.viewer-banner {
+  margin: 16px auto 0;
+  max-width: 420px;
+  padding: 10px 14px;
+  text-align: center;
+  font-size: 13px;
+  color: #3d4a63;
+  background: #edf2f7;
+  border-radius: 10px;
+}
+
 .actions {
   margin-top: 18px;
   display: flex;
   justify-content: center;
   gap: 8px;
+}
+
+.action-stack {
+  margin-top: 0;
+}
+
+.secondary-actions {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.secondary-btn {
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #f8f4ed;
+  color: #3f342d;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background: #f1ebdf;
 }
 
 .action-btn {
@@ -338,7 +1102,9 @@ watch(
 }
 
 .footer {
-  margin-top: 52px;
+  margin-top: 62px;
+  border-top: 1px solid var(--line-soft, #dad6cd);
+  padding-top: 28px;
   text-align: center;
 }
 
@@ -349,52 +1115,45 @@ watch(
   text-transform: uppercase;
   letter-spacing: 0.13em;
   font-size: 10px;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-weight: 500;
 }
 
 .footer a {
-  color: #1c1714;
+  color: var(--ink, #231f20);
   text-decoration: none;
 }
 
-.bookmark {
-  margin-top: 14px;
-  color: #8e8276;
-}
-
 .copyright {
-  margin-top: 12px;
+  margin-top: 20px;
   text-transform: uppercase;
-  letter-spacing: 0.11em;
+  letter-spacing: 0.12em;
   font-size: 9px;
-  font-family: Arial, sans-serif;
-  color: #7f7266;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: #5c534d;
 }
 
 .note {
-  margin-top: 6px;
+  margin-top: 8px;
   font-style: italic;
-  font-size: 12px;
-  color: #938578;
+  font-size: 13px;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  color: #655a52;
 }
 
 @media (min-width: 768px) {
-  .page {
-    padding: 28px 28px 40px;
-  }
-
   .hero-card {
     max-width: 620px;
     margin-left: auto;
     margin-right: auto;
   }
 
-  .photo {
-    height: 480px;
+  .hero-photo {
+    aspect-ratio: 3 / 4;
   }
 
   .title h1 {
-    font-size: 72px;
+    font-size: 60px;
   }
 
   .story,
@@ -411,16 +1170,15 @@ watch(
 
 @media (min-width: 1024px) {
   .page {
-    padding: 34px 40px 52px;
     display: grid;
-    grid-template-columns: minmax(300px, 0.44fr) minmax(0, 0.56fr);
+    grid-template-columns: minmax(360px, 0.42fr) minmax(0, 0.58fr);
     grid-template-areas:
       'header header'
       'hero title'
       'hero info'
       'hero actions'
       'footer footer';
-    gap: 22px 40px;
+    gap: 26px 48px;
     align-items: start;
   }
 
@@ -428,20 +1186,31 @@ watch(
     grid-area: header;
   }
 
-  .hero-card {
+  .hero-stack {
     grid-area: hero;
     margin-top: 8px;
-    max-width: none;
+    width: min(100%, 560px);
   }
 
-  .photo {
-    height: 560px;
+  .hero-card {
+    margin-top: 0;
+    width: min(100%, 560px);
+  }
+
+  .hero-photo {
+    aspect-ratio: 3 / 4;
   }
 
   .title {
     grid-area: title;
     margin-top: 8px;
     text-align: left;
+  }
+
+  .title h1 {
+    font-size: 58px;
+    line-height: 1.03;
+    max-width: 12ch;
   }
 
   .story,
@@ -458,9 +1227,17 @@ watch(
   }
 
   .actions {
-    grid-area: actions;
     justify-content: flex-start;
     margin-top: 0;
+  }
+
+  .action-stack {
+    grid-area: actions;
+  }
+
+  .secondary-actions {
+    justify-content: flex-start;
+    margin-top: 10px;
   }
 
   .footer {

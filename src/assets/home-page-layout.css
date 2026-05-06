@@ -7,15 +7,11 @@
 /* Mobile + desktop: tinted stack behind CTA + feature cards (mockup); not only from 640px up. */
 body #app main.home-page.page .hero-right {
   margin-top: 8px;
-  padding: 18px 16px 22px;
-  background: #faf8f4;
-  border-radius: 22px;
-  border: 1px solid rgba(222, 215, 203, 0.85);
 }
 
 @media (min-width: 640px) {
   body #app main.home-page.page {
-    padding: 32px 32px 48px;
+    padding: 26px 32px 20px;
     display: grid !important;
     /* Mockup: ~even two-column split */
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -25,6 +21,19 @@ body #app main.home-page.page .hero-right {
       'footer footer';
     gap: 28px clamp(28px, 4vw, 52px);
     align-items: start;
+    position: relative;
+  }
+
+  body #app main.home-page.page::after {
+    content: '';
+    position: absolute;
+    top: 122px;
+    bottom: 178px;
+    left: 50%;
+    width: 1px;
+    background: var(--line-soft, #d9d2c7);
+    transform: translateX(-50%);
+    pointer-events: none;
   }
 
   body #app main.home-page.page .hero-left {
@@ -39,7 +48,7 @@ body #app main.home-page.page .hero-right {
     grid-area: hero-right;
     align-self: start;
     margin-top: 0;
-    padding: 22px 24px 26px;
+    padding: 0;
   }
 
   body #app main.home-page.page .cta-box {
@@ -47,7 +56,7 @@ body #app main.home-page.page .hero-right {
   }
 
   body #app main.home-page.page .footer {
-    margin-top: 56px;
+    margin-top: 28px;
   }
 
   body #app main.home-page.page .hero-left .photo-card {
@@ -83,8 +92,7 @@ body #app main.home-page.page .hero-right {
   }
 
   body #app main.home-page.page .cta-box {
-    padding: 24px;
-    text-align: left;
+    text-align: center;
   }
 
   body #app main.home-page.page .cta-button {
@@ -93,7 +101,7 @@ body #app main.home-page.page .hero-right {
   }
 
   body #app main.home-page.page .cta-box p {
-    margin-top: 12px;
+    margin-top: 14px;
   }
 
   body #app main.home-page.page .feature-card p {
@@ -103,14 +111,19 @@ body #app main.home-page.page .hero-right {
 
 @media (min-width: 1200px) {
   body #app main.home-page.page {
-    max-width: 1180px;
+    max-width: 1240px;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
       'header header'
       'hero-left hero-right'
       'footer footer';
     gap: 36px clamp(36px, 4.5vw, 56px);
-    padding: 36px 40px 64px;
+    padding: 26px 42px 28px;
+  }
+
+  body #app main.home-page.page::after {
+    top: 122px;
+    bottom: 178px;
   }
 
   body #app main.home-page.page .hero-left {
@@ -120,8 +133,7 @@ body #app main.home-page.page .hero-right {
 
   body #app main.home-page.page .hero-right {
     gap: 16px;
-    padding: 26px 28px 30px;
-    border-radius: 26px;
+    padding: 0;
   }
 
   body #app main.home-page.page .photo-frame {
@@ -150,8 +162,8 @@ body #app main.home-page.page .hero-right {
   }
 
   body #app main.home-page.page .cta-box {
-    text-align: left;
-    padding: 26px 28px;
+    text-align: center;
+    padding: 28px 30px;
   }
 
   body #app main.home-page.page .cta-box p {
@@ -176,6 +188,6 @@ body #app main.home-page.page .hero-right {
   }
 
   body #app main.home-page.page .footer {
-    margin-top: 64px;
+    margin-top: 36px;
   }
 }

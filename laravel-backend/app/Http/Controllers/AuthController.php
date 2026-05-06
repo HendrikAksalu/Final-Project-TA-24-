@@ -23,8 +23,11 @@ class AuthController extends Controller
             'password' => $validated['password'],
         ]);
 
+        $token = $user->createToken('spa')->plainTextToken;
+
         return response()->json([
             'message' => 'Registration successful.',
+            'token' => $token,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -48,13 +51,23 @@ class AuthController extends Controller
             ], 401);
         }
 
+        $token = $user->createToken('spa')->plainTextToken;
+
         return response()->json([
             'message' => 'Login successful.',
+            'token' => $token,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
             ],
         ]);
+    }
+
+    public function logout(Request $request): JsonResponse
+    {
+        $request->user()->currentAccessToken()?->delete();
+
+        return response()->json(['message' => 'Logged out.']);
     }
 }
