@@ -40,6 +40,7 @@ set('writable_dirs', [
 host('stage')
     ->setHostname('ta24aksalu.itmajakas.ee')
     ->setRemoteUser('virt137753')
+    ->set('http_user', 'virt137753')
     ->setDeployPath('~/domeenid/www.ta24aksalu.itmajakas.ee/fototeek')
     ->setIdentityFile('~/.ssh/id_ed25519')
     ->set('labels', ['stage'])
