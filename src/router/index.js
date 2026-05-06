@@ -40,6 +40,10 @@ const router = createRouter({
       meta: { guestOnly: true },
     },
     {
+      path: '/login',
+      redirect: '/logi-sisse',
+    },
+    {
       path: '/albumid',
       name: 'heritage',
       component: HeritagePage,
