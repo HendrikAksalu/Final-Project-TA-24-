@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Album;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -106,7 +107,7 @@ class AlbumController extends Controller
         return response()->json(['message' => 'Album kustutatud.']);
     }
 
-    private function formatAlbum(Album $album, \App\Models\User $viewer): array
+    private function formatAlbum(Album $album, User $viewer): array
     {
         return [
             'id' => $album->id,
