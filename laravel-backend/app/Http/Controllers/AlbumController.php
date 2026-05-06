@@ -77,9 +77,13 @@ class AlbumController extends Controller
             return response()->json(['message' => 'Ainult albumi omanik saab seda muuta.'], 403);
         }
 
-        $request->merge([
-            'photo_class' => $request->input('photo_class', $request->input('photoClass')),
-        ]);
+        // Avoid merging photo_class when absent: null makes the key "present" and
+        // fails sometimes|string on PATCH payloads that only send e.g. title.
+        if ($request->has('photo_class') || $request->has('photoClass')) {
+            $request->merge([
+                'photo_class' => $request->input('photo_class', $request->input('photoClass')),
+            ]);
+        }
 
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
