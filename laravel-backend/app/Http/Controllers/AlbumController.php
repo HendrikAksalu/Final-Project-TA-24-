@@ -6,6 +6,7 @@ use App\Models\Album;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class AlbumController extends Controller
 {
@@ -77,21 +78,32 @@ class AlbumController extends Controller
             return response()->json(['message' => 'Ainult albumi omanik saab seda muuta.'], 403);
         }
 
-        // Avoid merging photo_class when absent: null makes the key "present" and
-        // fails sometimes|string on PATCH payloads that only send e.g. title.
-        if ($request->has('photo_class') || $request->has('photoClass')) {
-            $request->merge([
-                'photo_class' => $request->input('photo_class', $request->input('photoClass')),
-            ]);
+        // Build explicit payload so PATCH { title } never introduces photo_class: null
+        // (which Laravel treats as "present" and fails sometimes|string).
+        $data = [];
+        if ($request->exists('title')) {
+            $data['title'] = $request->input('title');
+        }
+        if ($request->exists('rotate')) {
+            $data['rotate'] = $request->input('rotate');
+        }
+        if ($request->exists('photo_class')) {
+            $data['photo_class'] = $request->input('photo_class');
+        } elseif ($request->exists('photoClass')) {
+            $data['photo_class'] = $request->input('photoClass');
         }
 
-        $validated = $request->validate([
-            'title' => ['sometimes', 'string', 'max:255'],
-            'photo_class' => ['sometimes', 'string', 'max:64'],
-            'rotate' => ['sometimes', 'string', 'max:32'],
-        ]);
+        if ($data === []) {
+            return response()->json(['message' => 'Ühtegi uuendatavat välja ei saadetud.'], 422);
+        }
 
-        $album->fill($validated);
+        $validated = Validator::make($data, [
+            'title' => ['string', 'max:255'],
+            'photo_class' => ['nullable', 'string', 'max:64'],
+            'rotate' => ['nullable', 'string', 'max:32'],
+        ])->validate();
+
+        $album->fill(collect($validated)->reject(fn ($value) => $value === null)->all());
         $album->save();
         $album->loadCount('memories');
 
