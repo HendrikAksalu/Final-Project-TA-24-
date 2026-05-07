@@ -34,6 +34,7 @@ const memorySaveError = ref('')
 const pendingImageDraftForMemoryId = ref(null)
 const lastSavedImageUrl = ref('')
 const lastSavedImageThumbUrl = ref('')
+const imageUploadBlocked = ref(false)
 
 try {
   user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
@@ -120,14 +121,20 @@ async function flushSaveCurrentMemory() {
   }
   const imageChanged = imageUrl.value !== lastSavedImageUrl.value
   const thumbChanged = imageThumbUrl.value !== lastSavedImageThumbUrl.value
-  if (imageChanged) body.imageUrl = imageUrl.value
-  if (thumbChanged) body.imageThumbUrl = imageThumbUrl.value
+  if (!imageUploadBlocked.value && imageChanged) body.imageUrl = imageUrl.value
+  if (!imageUploadBlocked.value && thumbChanged) body.imageThumbUrl = imageThumbUrl.value
 
   try {
     const res = await apiFetch(`/memories/${id}`, { method: 'PATCH', body })
     if (!res.ok) {
       if (res.status === 413) {
         memorySaveError.value = 'Pildi maht on serveri jaoks liiga suur. Proovi väiksemat või madalama kvaliteediga faili.'
+        if (imageChanged || thumbChanged) {
+          imageUploadBlocked.value = true
+          // Do not re-send the same oversized payload on every autosave.
+          lastSavedImageUrl.value = imageUrl.value
+          lastSavedImageThumbUrl.value = imageThumbUrl.value
+        }
       } else if (res.status >= 500) {
         memorySaveError.value = 'Serveri viga pildi salvestamisel. Proovi väiksemat JPG/PNG pilti.'
       } else {
@@ -138,6 +145,7 @@ async function flushSaveCurrentMemory() {
 
     memorySaveError.value = ''
     pendingImageDraftForMemoryId.value = null
+    imageUploadBlocked.value = false
 
     try {
       const json = await res.json()
@@ -308,16 +316,16 @@ function buildOptimizedImage(image, { maxSide, quality, maxLength }) {
   let currentQuality = quality
   let attempts = 0
 
-  while (attempts < 10) {
+  while (attempts < 14) {
     const data = resizeImageToDataUrl(image, currentSide, currentQuality)
     if (data && data.length <= maxLength) return data
 
-    const canShrinkSide = currentSide > 180
-    const canLowerQuality = currentQuality > 0.26
+    const canShrinkSide = currentSide > 120
+    const canLowerQuality = currentQuality > 0.18
     if (!canShrinkSide && !canLowerQuality) break
 
-    if (canShrinkSide) currentSide = Math.max(180, Math.round(currentSide * 0.84))
-    if (canLowerQuality) currentQuality = Math.max(0.26, Number((currentQuality - 0.07).toFixed(2)))
+    if (canShrinkSide) currentSide = Math.max(120, Math.round(currentSide * 0.76))
+    if (canLowerQuality) currentQuality = Math.max(0.18, Number((currentQuality - 0.09).toFixed(2)))
     attempts += 1
   }
 
@@ -332,12 +340,13 @@ async function onImageSelected(event) {
 
   try {
     const image = await loadImageFromFile(file)
-    imageUrl.value = buildOptimizedImage(image, { maxSide: 900, quality: 0.64, maxLength: 260000 })
-    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 260, quality: 0.54, maxLength: 60000 })
+    imageUrl.value = buildOptimizedImage(image, { maxSide: 620, quality: 0.44, maxLength: 70000 })
+    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 170, quality: 0.34, maxLength: 12000 })
     if (!imageUrl.value || !imageThumbUrl.value) {
       memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
       return
     }
+    imageUploadBlocked.value = false
     pendingImageDraftForMemoryId.value = String(route.query.memoryId ?? '')
     saveCurrentMemory()
     clearTimeout(memorySaveTimer)
@@ -428,6 +437,7 @@ function removeFaceMarker(markerId) {
 function removeImage() {
   if (!canEditMemory.value) return
   pendingImageDraftForMemoryId.value = null
+  imageUploadBlocked.value = false
   imageUrl.value = ''
   imageThumbUrl.value = ''
   faceMarkers.value = []

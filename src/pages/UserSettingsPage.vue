@@ -188,7 +188,12 @@ async function logout() {
         </div>
 
         <div class="block divider-top">
-        <h2 class="block-title">Salasõna</h2>
+        <div class="password-header">
+          <h2 class="block-title">Salasõna</h2>
+          <button type="button" class="show-hide-btn" @click="showPw = !showPw">
+            {{ showPw ? 'PEIDA' : 'NÄITA' }}
+          </button>
+        </div>
         <form class="stack-form" @submit.prevent="savePassword">
           <label class="field">
             <span class="label">Praegune salasõna</span>
@@ -217,23 +222,12 @@ async function logout() {
               class="input"
             />
           </label>
-          <label class="toggle-line">
-            <input v-model="showPw" type="checkbox" />
-            <span>Näita salasõnu</span>
-          </label>
           <button type="submit" class="primary-btn secondary-tone" :disabled="pwSaving">
             {{ pwSaving ? 'Uuendan…' : 'Muuda salasõna' }}
           </button>
         </form>
         <p v-if="pwError" class="feedback error">{{ pwError }}</p>
         <p v-if="pwSuccess" class="feedback success">{{ pwSuccess }}</p>
-        </div>
-
-        <div class="hint-box">
-        <p><strong>„Unauthenticated“?</strong> Klõpsa menüüst <strong>Logi välja</strong> ja logi uuesti sisse.</p>
-        <p>
-          <strong>„Invalid credentials“?</strong> Kui andmebaas on kord tühjaks käidud, pead <RouterLink to="/registreeru">uuesti registreeruma</RouterLink>.
-        </p>
         </div>
 
         <div class="settings-links">
@@ -332,6 +326,29 @@ async function logout() {
   color: #6b6058;
 }
 
+.password-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.password-header .block-title {
+  margin-bottom: 0;
+}
+
+.show-hide-btn {
+  border: 0;
+  background: transparent;
+  color: #5f534b;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
 .stack-form {
   display: flex;
   flex-direction: column;
@@ -364,19 +381,6 @@ async function logout() {
 .input:focus {
   outline: 2px solid rgba(30, 19, 12, 0.18);
   outline-offset: 1px;
-}
-
-.toggle-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: #5c534c;
-  cursor: pointer;
-}
-
-.toggle-line input {
-  accent-color: #1e130c;
 }
 
 .primary-btn {
@@ -415,30 +419,6 @@ async function logout() {
 
 .feedback.success {
   color: #2d6b4a;
-}
-
-.hint-box {
-  margin-top: 26px;
-  padding: 14px 14px 16px;
-  background: #f8f4ed;
-  border-radius: 10px;
-  border: 1px solid #e8dfd3;
-}
-
-.hint-box p {
-  margin: 0 0 10px;
-  font-size: 13px;
-  line-height: 1.55;
-  color: #4a423c;
-}
-
-.hint-box p:last-child {
-  margin-bottom: 0;
-}
-
-.hint-box :deep(a) {
-  color: #5c4d3f;
-  font-weight: 600;
 }
 
 .settings-links {
