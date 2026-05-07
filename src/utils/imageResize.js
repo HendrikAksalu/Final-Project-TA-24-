@@ -1,8 +1,8 @@
-const MAX_DIMENSION = 800
+const MAX_DIMENSION = 640
 const THUMB_DIMENSION = 280
 const INITIAL_QUALITY = 0.72
 const MIN_QUALITY = 0.40
-const MAX_BASE64_BYTES = 90_000 // ~90 KB — Zone.ee piiride sisse mahtumiseks
+const MAX_BASE64_BYTES = 50_000
 
 function loadImage(file) {
   return new Promise((resolve, reject) => {
