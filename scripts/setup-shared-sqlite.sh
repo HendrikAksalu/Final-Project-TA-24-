@@ -15,7 +15,7 @@ SHARED_DB_DIR="$BASE/shared/laravel-backend/database"
 SHARED_DB_FILE="$SHARED_DB_DIR/database.sqlite"
 SHARED_ENV="$BASE/shared/laravel-backend/.env"
 CURRENT_DB="$BASE/current/laravel-backend/database/database.sqlite"
-ABSOLUTE_DB_PATH="/home/virt137753/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/shared/laravel-backend/database/database.sqlite"
+ABSOLUTE_DB_PATH="/data01/virt137753/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/shared/laravel-backend/database/database.sqlite"
 
 echo "=== Fototeek SQLite jagatud kausta seadistus ==="
 echo
