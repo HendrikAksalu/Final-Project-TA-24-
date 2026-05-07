@@ -166,4 +166,30 @@ class AuthController extends Controller
             'message' => 'Salasõna uuendatud.',
         ]);
     }
+
+    public function destroy(Request $request): JsonResponse
+    {
+        $rawCurrentPassword = (string) $request->input('current_password');
+        $request->merge([
+            'current_password' => trim($rawCurrentPassword),
+        ]);
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+        ]);
+
+        $user = $request->user();
+        if (! Hash::check($validated['current_password'], $user->password)) {
+            return response()->json([
+                'message' => 'Praegune salasõna on vale.',
+            ], 422);
+        }
+
+        $user->tokens()->delete();
+        $user->delete();
+
+        return response()->json([
+            'message' => 'Konto kustutatud.',
+        ]);
+    }
 }

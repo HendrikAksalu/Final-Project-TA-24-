@@ -71,6 +71,8 @@ export function normalizeMemoryFromApi(row) {
     imageUrl: row.imageUrl || '',
     imageThumbUrl: row.imageThumbUrl || '',
     faceMarkers: Array.isArray(row.faceMarkers) ? row.faceMarkers : [],
+    authorName: row.authorName || '',
+    createdAt: row.createdAt || '',
   }
 }
 

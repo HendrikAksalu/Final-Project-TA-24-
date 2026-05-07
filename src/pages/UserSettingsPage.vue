@@ -32,6 +32,11 @@ const pwForm = reactive({
   next: '',
   nextConfirm: '',
 })
+const deleteSaving = ref(false)
+const deleteError = ref('')
+const deleteForm = reactive({
+  current: '',
+})
 
 function persistUser(payload) {
   user.value = payload
@@ -147,6 +152,44 @@ async function savePassword() {
   }
 }
 
+async function deleteAccount() {
+  deleteSaving.value = true
+  deleteError.value = ''
+
+  if (!deleteForm.current) {
+    deleteError.value = 'Sisesta konto kustutamiseks praegune salasõna.'
+    deleteSaving.value = false
+    return
+  }
+
+  const ok = window.confirm('Kas oled kindel? Konto kustutamine on pöördumatu.')
+  if (!ok) {
+    deleteSaving.value = false
+    return
+  }
+
+  try {
+    const res = await apiFetch('/user', {
+      method: 'DELETE',
+      body: {
+        current_password: deleteForm.current,
+      },
+    })
+    if (!res.ok) {
+      deleteError.value = await parseApiError(res, 'Konto kustutamine ebaõnnestus.')
+      return
+    }
+
+    await logoutSession()
+    user.value = null
+    router.push('/')
+  } catch (error) {
+    deleteError.value = 'Serveriga ei saanud ühendust.'
+  } finally {
+    deleteSaving.value = false
+  }
+}
+
 async function logout() {
   await logoutSession()
   user.value = null
@@ -228,6 +271,26 @@ async function logout() {
         </form>
         <p v-if="pwError" class="feedback error">{{ pwError }}</p>
         <p v-if="pwSuccess" class="feedback success">{{ pwSuccess }}</p>
+        </div>
+
+        <div class="block divider-top danger-block">
+          <h2 class="block-title danger-title">Konto kustutamine</h2>
+          <p class="danger-text">Sisesta praegune salasõna ja kinnita, kui soovid konto jäädavalt kustutada.</p>
+          <form class="stack-form" @submit.prevent="deleteAccount">
+            <label class="field">
+              <span class="label">Praegune salasõna</span>
+              <input
+                v-model="deleteForm.current"
+                :type="showPw ? 'text' : 'password'"
+                autocomplete="current-password"
+                class="input"
+              />
+            </label>
+            <button type="submit" class="primary-btn danger-btn" :disabled="deleteSaving">
+              {{ deleteSaving ? 'Kustutan…' : 'Kustuta konto' }}
+            </button>
+          </form>
+          <p v-if="deleteError" class="feedback error">{{ deleteError }}</p>
         </div>
 
         <div class="settings-links">
@@ -406,6 +469,24 @@ async function logout() {
 
 .primary-btn.secondary-tone {
   background: #3f342d;
+}
+
+.danger-block {
+  border-top-color: #f0d5d8;
+}
+
+.danger-title {
+  color: #8b2942;
+}
+
+.danger-text {
+  margin: 0 0 12px;
+  color: #6f5147;
+  font-size: 13px;
+}
+
+.danger-btn {
+  background: #8b2942;
 }
 
 .feedback {

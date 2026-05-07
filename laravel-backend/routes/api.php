@@ -13,6 +13,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     Route::patch('/user', [AuthController::class, 'updateProfile']);
+    Route::delete('/user', [AuthController::class, 'destroy']);
     Route::patch('/user/password', [AuthController::class, 'updatePassword']);
 
     Route::get('/albums', [AlbumController::class, 'index']);

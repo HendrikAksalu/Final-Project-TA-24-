@@ -92,6 +92,13 @@ const visibleCount = ref(24)
 const PAGE_SIZE = 24
 const photoClasses = ['one', 'two', 'three', 'four']
 
+function formatDate(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('et-EE')
+}
+
 function getMemoryTags(memory) {
   const tags = []
   if (memory.who) tags.push(...memory.who.split(',').map((part) => part.trim()).filter(Boolean))
@@ -327,6 +334,9 @@ async function logout() {
         Säilitame sinu pere ajaloo puudutatava olemuse püsivas ja kaunis
         digitaalses arhiivis.
       </p>
+      <p v-if="albumMeta" class="meta-line">
+        Albumi lõi: {{ albumMeta.ownerName || 'Tundmatu' }} · Lisatud: {{ formatDate(albumMeta.createdAt) || '—' }}
+      </p>
       <RouterLink to="/albumid" class="back-to-albums-btn">Tagasi albumitesse</RouterLink>
     </section>
 
@@ -371,6 +381,9 @@ async function logout() {
             />
           </div>
           <h2>{{ memory.title }}</h2>
+          <p class="memory-meta">
+            Lisas: {{ memory.authorName || 'Tundmatu' }} · {{ formatDate(memory.createdAt) || '—' }}
+          </p>
           <div v-if="getMemoryTags(memory).length" class="tag-list">
             <span v-for="tag in getMemoryTags(memory)" :key="tag" class="tag-chip">#{{ tag }}</span>
           </div>
@@ -472,6 +485,14 @@ async function logout() {
   color: #53473f;
   font-size: 18px !important;
   line-height: 1.3;
+}
+
+.meta-line {
+  margin: 10px auto 0;
+  max-width: 640px;
+  font-size: 12px;
+  color: #655a52;
+  font-family: var(--font-sans, 'Inter', sans-serif);
 }
 
 .back-to-albums-btn {
@@ -629,6 +650,14 @@ async function logout() {
   font-size: 29px;
   line-height: 0.95;
   font-weight: 500;
+}
+
+.memory-meta {
+  margin-top: 6px;
+  text-align: center;
+  color: #6d6158;
+  font-size: 11px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
 }
 
 .tag-list {
@@ -842,11 +871,18 @@ async function logout() {
 .gallery-arrow {
   width: 42px;
   height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.5);
   background: rgba(0, 0, 0, 0.2);
   color: #fff;
   font-size: 22px;
+  line-height: 1;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  padding: 0;
   cursor: pointer;
 }
 

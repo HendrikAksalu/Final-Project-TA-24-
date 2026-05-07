@@ -105,6 +105,14 @@ watch(
 )
 
 const canEditMemory = computed(() => albumMyRole.value === 'owner' || albumMyRole.value === 'editor')
+const currentMemoryAuthor = computed(() => currentMemory.value?.authorName || '')
+const currentMemoryCreatedAt = computed(() => {
+  const raw = currentMemory.value?.createdAt
+  if (!raw) return ''
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('et-EE')
+})
 
 let memorySaveTimer = null
 
@@ -627,8 +635,11 @@ watch(
         </div>
         <input ref="fileInput" type="file" accept="image/*" class="sr-only" @change="onImageSelected" />
         <p v-if="!editingTitle" class="memory-title editable-value" @click="startEditingTitle">{{ memoryTitle }}</p>
+      <p v-if="currentMemory" class="memory-meta-line">
+        Pildi lisas: {{ currentMemoryAuthor || 'Tundmatu' }} · Lisatud: {{ currentMemoryCreatedAt || '—' }}
+      </p>
         <input
-          v-else
+          v-if="editingTitle"
           ref="titleInput"
           v-model="title"
           type="text"
@@ -949,6 +960,14 @@ watch(
   color: #5f5349;
 }
 
+.memory-meta-line {
+  margin-top: 6px;
+  text-align: center;
+  color: #6d6158;
+  font-size: 12px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+}
+
 .gallery-nav {
   margin-top: 12px;
   display: flex;
@@ -1257,11 +1276,18 @@ watch(
 .lightbox-arrow {
   width: 42px;
   height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
   border: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.2);
   color: #fff;
   font-size: 22px;
+  line-height: 1;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  padding: 0;
   cursor: pointer;
 }
 

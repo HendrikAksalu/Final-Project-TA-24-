@@ -26,7 +26,7 @@ class MemoryController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        $memories = $album->memories()->orderBy('id')->get();
+        $memories = $album->memories()->with('author:id,name')->orderBy('id')->get();
 
         return response()->json([
             'memories' => $memories->map(fn (Memory $m) => $this->formatMemory($m))->all(),
@@ -212,6 +212,8 @@ class MemoryController extends Controller
             'favorite' => (bool) $memory->favorite,
             'rotate' => $memory->rotate ?? '',
             'faceMarkers' => $memory->face_markers ?? [],
+            'authorName' => $memory->author?->name ?? 'Tundmatu',
+            'createdAt' => optional($memory->created_at)?->toISOString(),
         ];
     }
 

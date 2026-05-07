@@ -16,12 +16,14 @@ class AlbumController extends Controller
 
         $owned = Album::query()
             ->where('user_id', $user->id)
+            ->with('owner:id,name')
             ->withCount('memories')
             ->orderBy('created_at')
             ->get();
 
         $shared = Album::query()
             ->whereHas('collaborators', fn ($q) => $q->where('users.id', $user->id))
+            ->with('owner:id,name')
             ->withCount('memories')
             ->orderBy('created_at')
             ->get();
@@ -65,6 +67,7 @@ class AlbumController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
+        $album->load('owner:id,name');
         $album->loadCount('memories');
 
         return response()->json([
@@ -132,6 +135,8 @@ class AlbumController extends Controller
             'photoClass' => $album->photo_class,
             'rotate' => $album->rotate,
             'coverThumbUrl' => $this->resolveImageUrl($album->cover_thumb_url),
+            'ownerName' => $album->owner?->name ?? 'Tundmatu',
+            'createdAt' => optional($album->created_at)?->toISOString(),
             'myRole' => $album->userRole($viewer),
             'isSharedWithMe' => $album->user_id !== $viewer->id,
         ];
