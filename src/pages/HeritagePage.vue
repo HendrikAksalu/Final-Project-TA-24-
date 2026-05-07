@@ -6,8 +6,6 @@ import { apiFetch, getToken, logoutSession, parseApiError } from '@/api/fototeek
 
 const router = useRouter()
 const user = ref(null)
-const menuOpen = ref(false)
-
 try {
   user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
 } catch (error) {
@@ -96,7 +94,6 @@ async function renameAlbum(albumId, currentTitle) {
 async function logout() {
   await logoutSession()
   user.value = null
-  menuOpen.value = false
   albums.value = []
   router.push('/')
 }
@@ -104,18 +101,7 @@ async function logout() {
 
 <template>
   <main class="page page-shell">
-    <div class="header-wrap">
-      <AppHeader
-        :show-auth-links="!isLoggedIn"
-        :show-menu="isLoggedIn"
-        @menu-click="menuOpen = !menuOpen"
-      />
-      <div v-if="isLoggedIn && menuOpen" class="menu-popover">
-        <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
-        <RouterLink to="/kasutaja-seaded" @click="menuOpen = false">Kasutaja sätted</RouterLink>
-        <button type="button" @click="logout">Logi välja</button>
-      </div>
-    </div>
+    <AppHeader :show-auth-links="!isLoggedIn" :show-menu="isLoggedIn" @logout="logout" />
 
     <section class="title">
       <p>Sinu pärand</p>
@@ -155,9 +141,9 @@ async function logout() {
 
     <footer class="footer">
       <nav>
-        <a href="#">Meist</a>
-        <a href="#">Privaatsus</a>
-        <a href="#">Eetika</a>
+        <RouterLink to="/meist">Meist</RouterLink>
+        <RouterLink to="/privaatsus">Privaatsus</RouterLink>
+        <RouterLink to="/eetika">Eetika</RouterLink>
       </nav>
       <p class="copyright">© 2025 Fototeek</p>
       <p class="note">Hoiame meie esivanemate lugusid.</p>
@@ -166,43 +152,6 @@ async function logout() {
 </template>
 
 <style scoped>
-.header-wrap {
-  position: relative;
-}
-
-.menu-popover {
-  position: absolute;
-  right: 0;
-  top: 28px;
-  min-width: 130px;
-  background: var(--surface-strong, #fff);
-  border: 1px solid var(--line-soft, #ddd4c6);
-  border-radius: 10px;
-  box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
-  overflow: hidden;
-  z-index: 10;
-}
-
-.menu-popover a,
-.menu-popover button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  background: transparent;
-  border: 0;
-  color: var(--ink, #231f20);
-  text-decoration: none;
-  font-family: var(--font-sans, 'Inter', sans-serif);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.menu-popover a:hover,
-.menu-popover button:hover {
-  background: var(--paper-bg, #f5f2ee);
-}
-
 .list-error,
 .list-loading {
   margin-top: 16px;

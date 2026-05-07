@@ -1,4 +1,6 @@
 <script setup>
+import { ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import brandLogoSrc from '@/assets/logo.png'
 
 defineProps({
@@ -16,7 +18,30 @@ defineProps({
   },
 })
 
-defineEmits(['menu-click'])
+const emit = defineEmits(['logout'])
+
+const route = useRoute()
+const menuOpen = ref(false)
+
+watch(
+  () => route.fullPath,
+  () => {
+    menuOpen.value = false
+  },
+)
+
+function toggleMenu() {
+  menuOpen.value = !menuOpen.value
+}
+
+function closeMenu() {
+  menuOpen.value = false
+}
+
+function handleLogout() {
+  closeMenu()
+  emit('logout')
+}
 </script>
 
 <template>
@@ -39,15 +64,23 @@ defineEmits(['menu-click'])
       <RouterLink to="/logi-sisse">Logi sisse</RouterLink>
       <RouterLink class="register" to="/registreeru">Registreeru</RouterLink>
     </nav>
-    <button
-      v-else-if="showMenu"
-      class="icon-link"
-      type="button"
-      aria-label="Veel tegevusi"
-      @click="$emit('menu-click')"
-    >
-      ⋮
-    </button>
+    <div v-else-if="showMenu" class="menu-anchor">
+      <button
+        class="icon-link"
+        type="button"
+        aria-label="Veel tegevusi"
+        :aria-expanded="menuOpen"
+        aria-haspopup="true"
+        @click="toggleMenu"
+      >
+        ⋮
+      </button>
+      <div v-if="menuOpen" class="menu-popover" role="menu">
+        <RouterLink to="/albumid" role="menuitem" @click="closeMenu">Minu albumid</RouterLink>
+        <RouterLink to="/kasutaja-seaded" role="menuitem" @click="closeMenu">Kasutaja seaded</RouterLink>
+        <button type="button" role="menuitem" @click="handleLogout">Logi välja</button>
+      </div>
+    </div>
     <div v-else class="left-spacer" aria-hidden="true"></div>
   </header>
 </template>
@@ -59,7 +92,6 @@ defineEmits(['menu-click'])
   align-items: center;
   justify-content: space-between;
   min-height: 64px;
-  
 }
 
 .topbar::after {
@@ -70,6 +102,47 @@ defineEmits(['menu-click'])
   width: 100vw;
   border-bottom: 1px solid var(--line-soft, #e4ddd1);
   pointer-events: none;
+}
+
+.menu-anchor {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  top: -12px;
+}
+
+.menu-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 158px;
+  background: var(--surface-strong, #fff);
+  border: 1px solid var(--line-soft, #ddd4c6);
+  border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
+  overflow: hidden;
+  z-index: 50;
+}
+
+.menu-popover a,
+.menu-popover button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  background: transparent;
+  border: 0;
+  color: var(--ink, #231f20);
+  text-decoration: none;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.menu-popover a:hover,
+.menu-popover button:hover {
+  background: var(--paper-bg, #f5f2ee);
 }
 
 .icon-link {
@@ -86,8 +159,6 @@ defineEmits(['menu-click'])
   padding: 0;
   font-size: 24px;
   line-height: 1;
-  position: relative;
-  top: -12px;
 }
 
 .icon-link svg {

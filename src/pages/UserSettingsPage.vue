@@ -6,8 +6,6 @@ import { apiFetch, getToken, logoutSession, parseApiError } from '@/api/fototeek
 
 const router = useRouter()
 const user = ref(null)
-const menuOpen = ref(false)
-
 try {
   user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
 } catch (error) {
@@ -152,36 +150,25 @@ async function savePassword() {
 async function logout() {
   await logoutSession()
   user.value = null
-  menuOpen.value = false
   router.push('/')
 }
 </script>
 
 <template>
   <main class="page page-shell">
-    <div class="header-wrap">
-      <AppHeader
-        :show-auth-links="!isLoggedIn"
-        :show-menu="isLoggedIn"
-        @menu-click="menuOpen = !menuOpen"
-      />
-      <div v-if="isLoggedIn && menuOpen" class="menu-popover">
-        <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
-        <RouterLink to="/kasutaja-seaded" @click="menuOpen = false">Kasutaja sätted</RouterLink>
-        <button type="button" @click="logout">Logi välja</button>
-      </div>
-    </div>
+    <AppHeader :show-auth-links="!isLoggedIn" :show-menu="isLoggedIn" @logout="logout" />
 
-    <section class="title">
-      <p>Konto</p>
-      <h1>Kasutaja sätted</h1>
-      <p class="subtitle">Uuenda oma profiili ja salasõna (salvestatakse serverisse).</p>
-    </section>
+    <div class="settings-inner">
+      <section class="title">
+        <p>Konto</p>
+        <h1>Kasutaja seaded</h1>
+        <p class="subtitle">Uuenda oma profiili ja salasõna — muudatused salvestatakse serverisse.</p>
+      </section>
 
-    <section class="settings-card">
-      <p v-if="profileLoading" class="muted">Laadin profiili…</p>
+      <section class="settings-card">
+        <p v-if="profileLoading" class="muted">Laadin profiili…</p>
 
-      <div class="block">
+        <div class="block">
         <h2 class="block-title">Profiil</h2>
         <form class="stack-form" @submit.prevent="saveProfile">
           <label class="field">
@@ -198,9 +185,9 @@ async function logout() {
         </form>
         <p v-if="profileError" class="feedback error">{{ profileError }}</p>
         <p v-if="profileSuccess" class="feedback success">{{ profileSuccess }}</p>
-      </div>
+        </div>
 
-      <div class="block divider-top">
+        <div class="block divider-top">
         <h2 class="block-title">Salasõna</h2>
         <form class="stack-form" @submit.prevent="savePassword">
           <label class="field">
@@ -240,23 +227,27 @@ async function logout() {
         </form>
         <p v-if="pwError" class="feedback error">{{ pwError }}</p>
         <p v-if="pwSuccess" class="feedback success">{{ pwSuccess }}</p>
-      </div>
+        </div>
 
-      <div class="hint-box">
+        <div class="hint-box">
         <p><strong>„Unauthenticated“?</strong> Klõpsa menüüst <strong>Logi välja</strong> ja logi uuesti sisse.</p>
         <p>
           <strong>„Invalid credentials“?</strong> Kui andmebaas on kord tühjaks käidud, pead <RouterLink to="/registreeru">uuesti registreeruma</RouterLink>.
         </p>
-      </div>
+        </div>
 
-      <RouterLink to="/albumid" class="back-link">← Tagasi albumitesse</RouterLink>
-    </section>
+        <div class="settings-links">
+          <RouterLink to="/albumid" class="back-link">← Tagasi albumitesse</RouterLink>
+          <RouterLink to="/" class="back-link">← Tagasi avalehele</RouterLink>
+        </div>
+      </section>
+    </div>
 
     <footer class="footer">
       <nav>
-        <a href="#">Meist</a>
-        <a href="#">Privaatsus</a>
-        <a href="#">Eetika</a>
+        <RouterLink to="/meist">Meist</RouterLink>
+        <RouterLink to="/privaatsus">Privaatsus</RouterLink>
+        <RouterLink to="/eetika">Eetika</RouterLink>
       </nav>
       <p class="copyright">© 2025 Fototeek</p>
       <p class="note">Hoiame meie esivanemate lugusid.</p>
@@ -265,74 +256,47 @@ async function logout() {
 </template>
 
 <style scoped>
-.header-wrap {
-  position: relative;
-}
-
-.menu-popover {
-  position: absolute;
-  right: 0;
-  top: 28px;
-  min-width: 130px;
-  background: var(--surface-strong, #fff);
-  border: 1px solid var(--line-soft, #ddd4c6);
-  border-radius: 10px;
-  box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
-  overflow: hidden;
-  z-index: 10;
-}
-
-.menu-popover a,
-.menu-popover button {
-  display: block;
+.settings-inner {
   width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  background: transparent;
-  border: 0;
-  color: var(--ink, #231f20);
-  text-decoration: none;
-  font-family: var(--font-sans, 'Inter', sans-serif);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.menu-popover a:hover,
-.menu-popover button:hover {
-  background: var(--paper-bg, #f5f2ee);
-}
-
-.page-shell {
-  padding: 24px 20px 48px;
   max-width: 640px;
   margin: 0 auto;
+  box-sizing: border-box;
 }
 
 .title {
+  margin-top: 26px;
   margin-bottom: 28px;
+  text-align: center;
 }
 
-.title p:first-child {
-  font-size: 11px;
+.title > p:first-of-type {
+  margin: 0;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: #7a6f66;
-  margin: 0 0 8px;
+  letter-spacing: 0.2em;
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+  color: var(--ink, #231f20);
 }
 
 .title h1 {
-  margin: 0 0 10px;
-  font-family: var(--font-serif, 'Libre Baskerville', serif);
-  font-size: clamp(1.5rem, 4vw, 2rem);
-  font-weight: 600;
+  margin: 16px 0 0;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  font-size: clamp(40px, 9vw, 56px);
+  line-height: 0.98;
+  font-weight: 500;
   color: var(--ink, #231f20);
 }
 
 .subtitle {
-  margin: 0;
-  font-size: 14px;
-  color: #5c534c;
-  line-height: 1.5;
+  margin: 16px auto 0;
+  max-width: 30em;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-style: italic;
+  color: #53473f;
+  font-size: 17px !important;
+  line-height: 1.35;
 }
 
 .muted {
@@ -477,6 +441,13 @@ async function logout() {
   font-weight: 600;
 }
 
+.settings-links {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .back-link {
   display: inline-block;
   margin-top: 22px;
@@ -487,28 +458,42 @@ async function logout() {
 }
 
 .footer {
-  margin-top: 48px;
+  margin-top: 62px;
+  border-top: 1px solid var(--line-soft, #dad6cd);
+  padding-top: 28px;
   text-align: center;
-  font-size: 11px;
-  color: #8a8078;
 }
 
 .footer nav {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 10px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-weight: 500;
 }
 
 .footer a {
-  color: inherit;
+  color: var(--ink, #231f20);
+  text-decoration: none;
 }
 
 .copyright {
-  margin: 0 0 4px;
+  margin-top: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 9px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: #5c534d;
 }
 
 .note {
-  margin: 0;
+  margin-top: 8px;
+  font-style: italic;
+  font-size: 13px;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  color: #655a52;
 }
 </style>

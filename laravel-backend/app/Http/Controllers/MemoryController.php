@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Album;
 use App\Models\Memory;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -46,8 +47,9 @@ class MemoryController extends Controller
             'who' => ['nullable', 'string'],
             'when' => ['nullable', 'string', 'max:255'],
             'where' => ['nullable', 'string'],
-            'image_url' => ['nullable', 'string'],
-            'image_thumb_url' => ['nullable', 'string'],
+            // Base64 data URLs can get large; keep under typical MySQL packet/proxy limits.
+            'image_url' => ['nullable', 'string', 'max:800000'],
+            'image_thumb_url' => ['nullable', 'string', 'max:160000'],
             'photo_class' => ['nullable', 'string', 'max:64'],
             'favorite' => ['nullable', 'boolean'],
             'rotate' => ['nullable', 'string', 'max:32'],
@@ -69,7 +71,13 @@ class MemoryController extends Controller
             'rotate' => $validated['rotate'] ?? '',
             'face_markers' => $validated['face_markers'] ?? [],
         ]);
-        $memory->save();
+        try {
+            $memory->save();
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Pildi salvestamine ebaõnnestus serveri piirangute tõttu. Proovi väiksemat pilti.',
+            ], 413);
+        }
 
         if ($memory->image_thumb_url) {
             $album->syncCoverFromThumb($memory->image_thumb_url);
@@ -102,8 +110,8 @@ class MemoryController extends Controller
             'who' => ['sometimes', 'nullable', 'string'],
             'when' => ['sometimes', 'nullable', 'string', 'max:255'],
             'where' => ['sometimes', 'nullable', 'string'],
-            'image_url' => ['sometimes', 'nullable', 'string'],
-            'image_thumb_url' => ['sometimes', 'nullable', 'string'],
+            'image_url' => ['sometimes', 'nullable', 'string', 'max:800000'],
+            'image_thumb_url' => ['sometimes', 'nullable', 'string', 'max:160000'],
             'photo_class' => ['sometimes', 'nullable', 'string', 'max:64'],
             'favorite' => ['sometimes', 'boolean'],
             'rotate' => ['sometimes', 'nullable', 'string', 'max:32'],
@@ -121,7 +129,13 @@ class MemoryController extends Controller
         }
 
         $memory->fill($payload);
-        $memory->save();
+        try {
+            $memory->save();
+        } catch (QueryException $e) {
+            return response()->json([
+                'message' => 'Pildi salvestamine ebaõnnestus serveri piirangute tõttu. Proovi väiksemat pilti.',
+            ], 413);
+        }
 
         if ($memory->image_thumb_url) {
             $album->syncCoverFromThumb($memory->image_thumb_url);

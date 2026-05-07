@@ -20,7 +20,6 @@ const where = ref('')
 const title = ref('')
 const editingTitle = ref(false)
 const user = ref(null)
-const menuOpen = ref(false)
 const imageUrl = ref('')
 const imageThumbUrl = ref('')
 const fileInput = ref(null)
@@ -125,6 +124,8 @@ async function flushSaveCurrentMemory() {
     if (!res.ok) {
       if (res.status === 413) {
         memorySaveError.value = 'Pildi maht on serveri jaoks liiga suur. Proovi väiksemat või madalama kvaliteediga faili.'
+      } else if (res.status >= 500) {
+        memorySaveError.value = 'Serveri viga pildi salvestamisel. Proovi väiksemat JPG/PNG pilti.'
       } else {
         memorySaveError.value = await parseApiError(res, 'Salvestamine ebaõnnestus.')
       }
@@ -296,6 +297,19 @@ function resizeImageToDataUrl(image, maxSide, quality = 0.82) {
   }
 }
 
+function buildOptimizedImage(image, { maxSide, quality, maxLength }) {
+  let data = resizeImageToDataUrl(image, maxSide, quality)
+  if (data && data.length <= maxLength) return data
+
+  data = resizeImageToDataUrl(image, Math.max(640, Math.round(maxSide * 0.75)), Math.max(0.52, quality - 0.12))
+  if (data && data.length <= maxLength) return data
+
+  data = resizeImageToDataUrl(image, Math.max(560, Math.round(maxSide * 0.62)), 0.52)
+  if (data && data.length <= maxLength) return data
+
+  return ''
+}
+
 async function onImageSelected(event) {
   if (!canEditMemory.value) return
   const [file] = event.target.files || []
@@ -304,10 +318,10 @@ async function onImageSelected(event) {
 
   try {
     const image = await loadImageFromFile(file)
-    imageUrl.value = resizeImageToDataUrl(image, 1400, 0.8)
-    imageThumbUrl.value = resizeImageToDataUrl(image, 420, 0.72)
+    imageUrl.value = buildOptimizedImage(image, { maxSide: 1180, quality: 0.74, maxLength: 950000 })
+    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 360, quality: 0.64, maxLength: 180000 })
     if (!imageUrl.value || !imageThumbUrl.value) {
-      memorySaveError.value = 'Seda pildi formaati ei õnnestunud töödelda. Proovi JPG või PNG failiga.'
+      memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
       return
     }
     pendingImageDraftForMemoryId.value = String(route.query.memoryId ?? '')
@@ -325,7 +339,6 @@ async function onImageSelected(event) {
 async function logout() {
   await logoutSession()
   user.value = null
-  menuOpen.value = false
   router.push('/')
 }
 
@@ -517,16 +530,7 @@ watch(
 <template>
   <main class="page page-shell">
     <div class="header-wrap">
-      <AppHeader
-        :show-auth-links="!isLoggedIn"
-        :show-menu="isLoggedIn"
-        @menu-click="menuOpen = !menuOpen"
-      />
-      <div v-if="isLoggedIn && menuOpen" class="menu-popover">
-        <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
-        <RouterLink to="/kasutaja-seaded" @click="menuOpen = false">Kasutaja sätted</RouterLink>
-        <button type="button" @click="logout">Logi välja</button>
-      </div>
+      <AppHeader :show-auth-links="!isLoggedIn" :show-menu="isLoggedIn" @logout="logout" />
     </div>
 
     <section class="hero-stack">
@@ -707,9 +711,9 @@ watch(
 
     <footer class="footer">
       <nav>
-        <a href="#">Meist</a>
-        <a href="#">Privaatsus</a>
-        <a href="#">Eetika</a>
+        <RouterLink to="/meist">Meist</RouterLink>
+        <RouterLink to="/privaatsus">Privaatsus</RouterLink>
+        <RouterLink to="/eetika">Eetika</RouterLink>
       </nav>
       <p class="copyright">© 2025 Fototeek</p>
       <p class="note">Hoiame meie esivanemate lugusid.</p>
@@ -720,39 +724,6 @@ watch(
 <style scoped>
 .header-wrap {
   position: relative;
-}
-
-.menu-popover {
-  position: absolute;
-  right: 0;
-  top: 28px;
-  min-width: 130px;
-  background: var(--surface-strong, #fff);
-  border: 1px solid var(--line-soft, #ddd4c6);
-  border-radius: 10px;
-  box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
-  overflow: hidden;
-  z-index: 10;
-}
-
-.menu-popover a,
-.menu-popover button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  background: transparent;
-  border: 0;
-  color: var(--ink, #231f20);
-  text-decoration: none;
-  font-family: var(--font-sans, 'Inter', sans-serif);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.menu-popover a:hover,
-.menu-popover button:hover {
-  background: var(--paper-bg, #f5f2ee);
 }
 
 .hero-card {

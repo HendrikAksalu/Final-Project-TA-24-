@@ -5,19 +5,12 @@ import HomePage from '@/pages/HomePage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import MemoryPage from '@/pages/MemoryPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
+import InfoArticlePage from '@/pages/InfoArticlePage.vue'
 import UserSettingsPage from '@/pages/UserSettingsPage.vue'
 import { getToken } from '@/api/fototeekApi.js'
 
-function getStoredUser() {
-  try {
-    return JSON.parse(localStorage.getItem('fototeek_user') || 'null')
-  } catch (error) {
-    return null
-  }
-}
-
 function hasAuthSession() {
-  return Boolean(getStoredUser()) && Boolean(getToken())
+  return Boolean(getToken())
 }
 
 const router = createRouter({
@@ -43,6 +36,24 @@ const router = createRouter({
     {
       path: '/login',
       redirect: '/logi-sisse',
+    },
+    {
+      path: '/meist',
+      name: 'about',
+      component: InfoArticlePage,
+      meta: { contentKey: 'meist' },
+    },
+    {
+      path: '/privaatsus',
+      name: 'privacy',
+      component: InfoArticlePage,
+      meta: { contentKey: 'privaatsus' },
+    },
+    {
+      path: '/eetika',
+      name: 'ethics',
+      component: InfoArticlePage,
+      meta: { contentKey: 'eetika' },
     },
     {
       path: '/albumid',

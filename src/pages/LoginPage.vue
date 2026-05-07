@@ -7,8 +7,6 @@ import { apiFetch, getToken, logoutSession, parseApiError, setToken } from '@/ap
 
 const router = useRouter()
 const user = ref(null)
-const menuOpen = ref(false)
-
 try {
   user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
 } catch (error) {
@@ -30,12 +28,14 @@ async function onSubmit() {
   isSubmitting.value = true
   errorMessage.value = ''
   successMessage.value = ''
+  const email = form.value.email.trim().toLowerCase()
+  const password = form.value.password
   try {
     const response = await apiFetch('/login', {
       method: 'POST',
       body: {
-        email: form.value.email,
-        password: form.value.password,
+        email,
+        password,
       },
     })
 
@@ -59,20 +59,14 @@ async function onSubmit() {
 async function logout() {
   await logoutSession()
   user.value = null
-  menuOpen.value = false
   router.push('/')
 }
 </script>
 
 <template>
   <main class="page">
-    <div class="header-wrap">
-      <AppHeader :show-auth-links="!isLoggedIn" :show-menu="isLoggedIn" @menu-click="menuOpen = !menuOpen" />
-      <div v-if="isLoggedIn && menuOpen" class="menu-popover">
-        <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
-        <RouterLink to="/kasutaja-seaded" @click="menuOpen = false">Kasutaja sätted</RouterLink>
-        <button type="button" @click="logout">Logi välja</button>
-      </div>
+    <div class="page-header-slot">
+      <AppHeader :show-auth-links="!isLoggedIn" :show-menu="isLoggedIn" @logout="logout" />
     </div>
 
     <section class="hero-left">
@@ -117,9 +111,9 @@ async function logout() {
 
     <footer class="footer">
       <nav>
-        <a href="#">Meist</a>
-        <a href="#">Privaatsus</a>
-        <a href="#">Eetika</a>
+        <RouterLink to="/meist">Meist</RouterLink>
+        <RouterLink to="/privaatsus">Privaatsus</RouterLink>
+        <RouterLink to="/eetika">Eetika</RouterLink>
       </nav>
       <p class="copyright">© 2025 Fototeek</p>
       <p class="note">Hoiame meie esivanemate lugusid.</p>
@@ -136,42 +130,8 @@ async function logout() {
   font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
 }
 
-.header-wrap {
-  position: relative;
+.page-header-slot {
   grid-area: header;
-}
-
-.menu-popover {
-  position: absolute;
-  right: 0;
-  top: 28px;
-  min-width: 130px;
-  background: var(--surface-strong, #fff);
-  border: 1px solid var(--line-soft, #ddd4c6);
-  border-radius: 10px;
-  box-shadow: 0 8px 18px rgba(20, 12, 8, 0.16);
-  overflow: hidden;
-  z-index: 10;
-}
-
-.menu-popover a,
-.menu-popover button {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 10px 12px;
-  background: transparent;
-  border: 0;
-  color: var(--ink, #231f20);
-  text-decoration: none;
-  font-family: var(--font-sans, 'Inter', sans-serif);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.menu-popover a:hover,
-.menu-popover button:hover {
-  background: var(--paper-bg, #f5f2ee);
 }
 
 .hero-left {
