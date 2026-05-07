@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { apiFetch, getToken, logoutSession, normalizeMemoryFromApi, parseApiError } from '@/api/fototeekApi.js'
@@ -35,6 +35,7 @@ const pendingImageDraftForMemoryId = ref(null)
 const lastSavedImageUrl = ref('')
 const lastSavedImageThumbUrl = ref('')
 const imageUploadBlocked = ref(false)
+const lightboxOpen = ref(false)
 
 try {
   user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
@@ -174,6 +175,7 @@ function scheduleSaveCurrentMemory() {
 }
 
 onBeforeRouteLeave(async () => {
+  lightboxOpen.value = false
   clearTimeout(memorySaveTimer)
   memorySaveTimer = null
   await flushSaveCurrentMemory()
@@ -340,8 +342,8 @@ async function onImageSelected(event) {
 
   try {
     const image = await loadImageFromFile(file)
-    imageUrl.value = buildOptimizedImage(image, { maxSide: 620, quality: 0.44, maxLength: 70000 })
-    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 170, quality: 0.34, maxLength: 12000 })
+    imageUrl.value = buildOptimizedImage(image, { maxSide: 420, quality: 0.34, maxLength: 30000 })
+    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 140, quality: 0.28, maxLength: 8000 })
     if (!imageUrl.value || !imageThumbUrl.value) {
       memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
       return
@@ -427,6 +429,53 @@ function goToAdjacentMemory(direction) {
     },
   })
 }
+
+const lightboxImageSrc = computed(() => currentMemory.value?.imageUrl || currentMemory.value?.imageThumbUrl || '')
+const canOpenLightbox = computed(() => Boolean(lightboxImageSrc.value))
+
+function openLightbox() {
+  if (!canOpenLightbox.value) return
+  lightboxOpen.value = true
+}
+
+function closeLightbox() {
+  lightboxOpen.value = false
+}
+
+function navigateLightbox(direction) {
+  if (!orderedMemories.value.length || currentMemoryIndex.value === -1) return
+  goToAdjacentMemory(direction)
+}
+
+function handleGlobalKeydown(event) {
+  if (!lightboxOpen.value) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeLightbox()
+    return
+  }
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    navigateLightbox(-1)
+    return
+  }
+  if (event.key === 'ArrowRight') {
+    event.preventDefault()
+    navigateLightbox(1)
+  }
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', handleGlobalKeydown)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', handleGlobalKeydown)
+  }
+})
 
 function removeFaceMarker(markerId) {
   if (!canEditMemory.value) return
@@ -723,6 +772,15 @@ watch(
           {{ editing ? 'Salvesta' : 'Muuda' }}
         </button>
         <button type="button" class="action-btn" @click="downloadPlaceholder">⇩</button>
+        <button
+          v-if="canOpenLightbox"
+          type="button"
+          class="action-btn view-large"
+          title="Vaata suurelt"
+          @click="openLightbox"
+        >
+          ⛶
+        </button>
       </div>
       <p v-if="memorySaveError" class="memory-save-error" role="alert">{{ memorySaveError }}</p>
       <div class="secondary-actions">
@@ -734,6 +792,30 @@ watch(
         <button type="button" class="secondary-btn" @click="goBackToAlbum">Piltide juurde</button>
       </div>
     </section>
+
+    <div v-if="lightboxOpen && lightboxImageSrc" class="lightbox-overlay" @click.self="closeLightbox">
+      <button type="button" class="lightbox-close" @click="closeLightbox">×</button>
+      <button
+        type="button"
+        class="lightbox-arrow"
+        :disabled="currentMemoryIndex <= 0"
+        @click="navigateLightbox(-1)"
+      >
+        ←
+      </button>
+      <figure class="lightbox-figure">
+        <img :src="lightboxImageSrc" alt="" class="lightbox-image" />
+        <figcaption>{{ memoryTitle }}</figcaption>
+      </figure>
+      <button
+        type="button"
+        class="lightbox-arrow"
+        :disabled="currentMemoryIndex >= orderedMemories.length - 1"
+        @click="navigateLightbox(1)"
+      >
+        →
+      </button>
+    </div>
 
     <footer class="footer">
       <nav>
@@ -1164,12 +1246,81 @@ watch(
   cursor: pointer;
 }
 
+.action-btn.view-large {
+  font-size: 14px;
+}
+
 .action-btn.edit {
   width: 82px;
   font-family: Arial, sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   font-size: 11px;
+}
+
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(14, 10, 8, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 18px;
+  z-index: 1200;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.17);
+  color: #fff;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.lightbox-arrow {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.lightbox-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.lightbox-figure {
+  margin: 0;
+  max-width: min(86vw, 980px);
+}
+
+.lightbox-image {
+  display: block;
+  width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.4);
+}
+
+.lightbox-figure figcaption {
+  margin-top: 10px;
+  text-align: center;
+  color: #f3ece2;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  font-size: 22px;
 }
 
 .footer {

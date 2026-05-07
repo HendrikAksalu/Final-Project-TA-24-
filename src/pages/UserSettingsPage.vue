@@ -231,8 +231,8 @@ async function logout() {
         </div>
 
         <div class="settings-links">
-          <RouterLink to="/albumid" class="back-link">← Tagasi albumitesse</RouterLink>
-          <RouterLink to="/" class="back-link">← Tagasi avalehele</RouterLink>
+          <RouterLink to="/" class="back-link">Tagasi avalehele</RouterLink>
+          <RouterLink to="/albumid" class="back-link">Tagasi albumitesse</RouterLink>
         </div>
       </section>
     </div>
@@ -423,18 +423,19 @@ async function logout() {
 
 .settings-links {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
+  align-items: center;
   gap: 16px;
+  margin-top: 22px;
   flex-wrap: wrap;
 }
 
 .back-link {
-  display: inline-block;
-  margin-top: 22px;
+  display: inline-flex;
   font-size: 13px;
   color: #5c4d3f;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration: none;
+  font-family: var(--font-sans, 'Inter', sans-serif);
 }
 
 .footer {

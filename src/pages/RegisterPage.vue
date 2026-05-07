@@ -101,11 +101,16 @@ async function logout() {
           </button>
         </div>
 
-        <input
-          v-model="form.password_confirmation"
-          :type="showPassword ? 'text' : 'password'"
-          placeholder="Kinnita parool"
-        />
+        <div class="password-wrap">
+          <input
+            v-model="form.password_confirmation"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="Kinnita parool"
+          />
+          <button type="button" @click="showPassword = !showPassword">
+            {{ showPassword ? 'PEIDA' : 'NÄITA' }}
+          </button>
+        </div>
 
         <button type="submit" class="submit-btn" :disabled="isSubmitting">
           {{ isSubmitting ? 'Registreerin...' : 'Registreeru' }}
