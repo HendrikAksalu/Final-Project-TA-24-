@@ -32,6 +32,8 @@ const draftFaceMarker = ref(null)
 const memorySaveError = ref('')
 /** Kui kasutaja valis pildi enne kui API mälestuse kirje laeb / vältib watch()-i tühjaks kirjutamist */
 const pendingImageDraftForMemoryId = ref(null)
+const lastSavedImageUrl = ref('')
+const lastSavedImageThumbUrl = ref('')
 
 try {
   user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
@@ -114,10 +116,12 @@ async function flushSaveCurrentMemory() {
     who: who.value,
     when: when.value,
     where: where.value,
-    imageUrl: imageUrl.value,
-    imageThumbUrl: imageThumbUrl.value,
     faceMarkers: faceMarkers.value,
   }
+  const imageChanged = imageUrl.value !== lastSavedImageUrl.value
+  const thumbChanged = imageThumbUrl.value !== lastSavedImageThumbUrl.value
+  if (imageChanged) body.imageUrl = imageUrl.value
+  if (thumbChanged) body.imageThumbUrl = imageThumbUrl.value
 
   try {
     const res = await apiFetch(`/memories/${id}`, { method: 'PATCH', body })
@@ -143,6 +147,8 @@ async function flushSaveCurrentMemory() {
         if (idx !== -1 && normalized) {
           memories.value[idx] = normalized
         }
+        lastSavedImageUrl.value = normalized?.imageUrl || ''
+        lastSavedImageThumbUrl.value = normalized?.imageThumbUrl || ''
       }
     } catch (error) {
       // ignore JSON errors
@@ -301,13 +307,13 @@ function buildOptimizedImage(image, { maxSide, quality, maxLength }) {
   let data = resizeImageToDataUrl(image, maxSide, quality)
   if (data && data.length <= maxLength) return data
 
-  data = resizeImageToDataUrl(image, Math.max(620, Math.round(maxSide * 0.72)), Math.max(0.48, quality - 0.14))
+  data = resizeImageToDataUrl(image, Math.max(520, Math.round(maxSide * 0.7)), Math.max(0.42, quality - 0.18))
   if (data && data.length <= maxLength) return data
 
-  data = resizeImageToDataUrl(image, Math.max(520, Math.round(maxSide * 0.6)), 0.46)
+  data = resizeImageToDataUrl(image, Math.max(420, Math.round(maxSide * 0.58)), 0.4)
   if (data && data.length <= maxLength) return data
 
-  data = resizeImageToDataUrl(image, Math.max(460, Math.round(maxSide * 0.5)), 0.4)
+  data = resizeImageToDataUrl(image, Math.max(340, Math.round(maxSide * 0.48)), 0.34)
   if (data && data.length <= maxLength) return data
 
   return ''
@@ -321,8 +327,8 @@ async function onImageSelected(event) {
 
   try {
     const image = await loadImageFromFile(file)
-    imageUrl.value = buildOptimizedImage(image, { maxSide: 1024, quality: 0.68, maxLength: 700000 })
-    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 300, quality: 0.56, maxLength: 120000 })
+    imageUrl.value = buildOptimizedImage(image, { maxSide: 760, quality: 0.58, maxLength: 240000 })
+    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 220, quality: 0.5, maxLength: 50000 })
     if (!imageUrl.value || !imageThumbUrl.value) {
       memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
       return
@@ -508,6 +514,8 @@ watch(
       imageUrl.value = memory?.imageUrl || ''
       imageThumbUrl.value = memory?.imageThumbUrl || ''
     }
+    lastSavedImageUrl.value = memory?.imageUrl || ''
+    lastSavedImageThumbUrl.value = memory?.imageThumbUrl || ''
 
     if (Array.isArray(memory?.faceMarkers)) {
       faceMarkers.value = memory.faceMarkers.map((marker) => ({
