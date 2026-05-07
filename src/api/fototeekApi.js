@@ -31,7 +31,9 @@ export async function apiFetch(path, options = {}) {
   }
 
   let body = options.body
-  if (body !== undefined && body !== null && typeof body === 'object' && !(body instanceof FormData)) {
+  if (body instanceof FormData) {
+    // Do not set Content-Type manually for multipart/form-data.
+  } else if (body !== undefined && body !== null && typeof body === 'object') {
     headers['Content-Type'] = 'application/json'
     body = JSON.stringify(body)
   }

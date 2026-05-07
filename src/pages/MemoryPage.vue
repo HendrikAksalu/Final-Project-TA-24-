@@ -278,20 +278,53 @@ async function onImageSelected(event) {
 
   try {
     const processed = await processImageFile(file)
-    imageUrl.value = processed.imageUrl || ''
-    imageThumbUrl.value = processed.imageThumbUrl || ''
-    if (!imageUrl.value || !imageThumbUrl.value) {
-      memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
+    const memoryId = route.query.memoryId
+    const formData = new FormData()
+    formData.append('image', processed)
+    formData.append('title', title.value || '')
+    formData.append('story', story.value || '')
+    formData.append('who', who.value || '')
+    formData.append('when', when.value || '')
+    formData.append('where', where.value || '')
+    formData.append('face_markers', JSON.stringify(faceMarkers.value || []))
+    const photoClass = currentMemory.value?.photoClass
+    if (photoClass) formData.append('photo_class', photoClass)
+    const rotate = currentMemory.value?.rotate
+    if (rotate) formData.append('rotate', rotate)
+
+    const targetUrl = memoryId ? `/memories/${memoryId}` : `/albums/${route.query.albumId}/memories`
+    const method = memoryId ? 'PATCH' : 'POST'
+    if (method === 'PATCH') formData.append('_method', 'PATCH')
+
+    const res = await apiFetch(targetUrl, {
+      method: method === 'PATCH' ? 'POST' : method,
+      body: formData,
+    })
+    if (!res.ok) {
+      memorySaveError.value = await parseApiError(res, 'Pildi salvestamine ebaõnnestus.')
       return
     }
-    imageUploadBlocked.value = false
-    pendingImageDraftForMemoryId.value = String(route.query.memoryId ?? '')
-    saveCurrentMemory()
-    clearTimeout(memorySaveTimer)
-    memorySaveTimer = null
-    await flushSaveCurrentMemory()
+
+    const json = await res.json()
+    if (json?.memory) {
+      const normalized = normalizeMemoryFromApi(json.memory)
+      const currentId = String(memoryId ?? normalized.id)
+      const idx = memories.value.findIndex((m) => String(m.id) === currentId)
+      if (idx !== -1) {
+        memories.value[idx] = normalized
+      } else if (normalized?.id) {
+        memories.value.push(normalized)
+      }
+      imageUrl.value = normalized?.imageUrl || ''
+      imageThumbUrl.value = normalized?.imageThumbUrl || ''
+      lastSavedImageUrl.value = imageUrl.value
+      lastSavedImageThumbUrl.value = imageThumbUrl.value
+      imageUploadBlocked.value = false
+      pendingImageDraftForMemoryId.value = null
+      memorySaveError.value = ''
+    }
   } catch (error) {
-    alert('Pildi lisamine ebaõnnestus. Proovi teise failiga.')
+    memorySaveError.value = 'Pildi lisamine ebaõnnestus. Proovi teise failiga.'
   } finally {
     event.target.value = ''
   }

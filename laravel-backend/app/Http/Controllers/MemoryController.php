@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Album;
 use App\Models\Memory;
-use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 
 class MemoryController extends Controller
 {
@@ -47,16 +47,29 @@ class MemoryController extends Controller
             'who' => ['nullable', 'string'],
             'when' => ['nullable', 'string', 'max:255'],
             'where' => ['nullable', 'string'],
-            // Base64 data URLs can get large; keep under typical MySQL packet/proxy limits.
-            'image_url' => ['nullable', 'string', 'max:8000000'],
-            'image_thumb_url' => ['nullable', 'string', 'max:400000'],
+            'image' => ['nullable', 'file', 'image', 'max:20480'],
             'photo_class' => ['nullable', 'string', 'max:64'],
             'favorite' => ['nullable', 'boolean'],
             'rotate' => ['nullable', 'string', 'max:32'],
-            'face_markers' => ['nullable', 'array'],
+            'face_markers' => ['nullable'],
         ]);
 
-        $memory = new Memory([
+        $imagePath = null;
+        $thumbPath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $this->storeImage($request->file('image'), (int) $album->id);
+            $thumbPath = $this->createThumbnail($request->file('image'), (int) $album->id);
+        }
+
+        $faceMarkers = $validated['face_markers'] ?? [];
+        if (is_string($faceMarkers)) {
+            $faceMarkers = json_decode($faceMarkers, true) ?? [];
+        }
+        if (! is_array($faceMarkers)) {
+            $faceMarkers = [];
+        }
+
+        $memory = Memory::create([
             'album_id' => $album->id,
             'user_id' => $request->user()->id,
             'title' => $validated['title'] ?? 'Uus pilt',
@@ -64,23 +77,16 @@ class MemoryController extends Controller
             'who' => $validated['who'] ?? '',
             'when' => $validated['when'] ?? '',
             'where_note' => $validated['where'] ?? '',
-            'image_url' => $validated['image_url'] ?? '',
-            'image_thumb_url' => $validated['image_thumb_url'] ?? '',
+            'image_url' => $imagePath ?? '',
+            'image_thumb_url' => $thumbPath ?? '',
             'photo_class' => $validated['photo_class'] ?? 'one',
-            'favorite' => $validated['favorite'] ?? false,
+            'favorite' => filter_var($validated['favorite'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'rotate' => $validated['rotate'] ?? '',
-            'face_markers' => $validated['face_markers'] ?? [],
+            'face_markers' => $faceMarkers,
         ]);
-        try {
-            $memory->save();
-        } catch (QueryException $e) {
-            return response()->json([
-                'message' => 'Pildi salvestamine ebaõnnestus serveri piirangute tõttu. Proovi väiksemat pilti.',
-            ], 413);
-        }
 
-        if ($memory->image_thumb_url) {
-            $album->syncCoverFromThumb($memory->image_thumb_url);
+        if ($thumbPath) {
+            $album->syncCoverFromThumb($thumbPath);
         }
 
         $album->loadCount('memories');
@@ -110,12 +116,13 @@ class MemoryController extends Controller
             'who' => ['sometimes', 'nullable', 'string'],
             'when' => ['sometimes', 'nullable', 'string', 'max:255'],
             'where' => ['sometimes', 'nullable', 'string'],
-            'image_url' => ['sometimes', 'nullable', 'string', 'max:8000000'],
-            'image_thumb_url' => ['sometimes', 'nullable', 'string', 'max:400000'],
+            'image' => ['sometimes', 'file', 'image', 'max:20480'],
+            'image_url' => ['sometimes', 'nullable', 'string'],
+            'image_thumb_url' => ['sometimes', 'nullable', 'string'],
             'photo_class' => ['sometimes', 'nullable', 'string', 'max:64'],
             'favorite' => ['sometimes', 'boolean'],
             'rotate' => ['sometimes', 'nullable', 'string', 'max:32'],
-            'face_markers' => ['sometimes', 'nullable', 'array'],
+            'face_markers' => ['sometimes', 'nullable'],
         ]);
 
         $payload = [];
@@ -127,15 +134,20 @@ class MemoryController extends Controller
         if (array_key_exists('where', $validated)) {
             $payload['where_note'] = $validated['where'];
         }
+        if (array_key_exists('face_markers', $validated)) {
+            $decodedMarkers = $validated['face_markers'];
+            if (is_string($decodedMarkers)) {
+                $decodedMarkers = json_decode($decodedMarkers, true) ?? [];
+            }
+            $payload['face_markers'] = is_array($decodedMarkers) ? $decodedMarkers : [];
+        }
+        if ($request->hasFile('image')) {
+            $payload['image_url'] = $this->storeImage($request->file('image'), (int) $album->id);
+            $payload['image_thumb_url'] = $this->createThumbnail($request->file('image'), (int) $album->id);
+        }
 
         $memory->fill($payload);
-        try {
-            $memory->save();
-        } catch (QueryException $e) {
-            return response()->json([
-                'message' => 'Pildi salvestamine ebaõnnestus serveri piirangute tõttu. Proovi väiksemat pilti.',
-            ], 413);
-        }
+        $memory->save();
 
         if ($memory->image_thumb_url) {
             $album->syncCoverFromThumb($memory->image_thumb_url);
@@ -178,12 +190,85 @@ class MemoryController extends Controller
             'who' => $memory->who ?? '',
             'when' => $memory->when ?? '',
             'where' => $memory->where_note ?? '',
-            'imageUrl' => $memory->image_url ?? '',
-            'imageThumbUrl' => $memory->image_thumb_url ?? '',
+            'imageUrl' => $this->resolveImageUrl($memory->image_url),
+            'imageThumbUrl' => $this->resolveImageUrl($memory->image_thumb_url),
             'photoClass' => $memory->photo_class,
             'favorite' => (bool) $memory->favorite,
             'rotate' => $memory->rotate ?? '',
             'faceMarkers' => $memory->face_markers ?? [],
         ];
+    }
+
+    private function resolveImageUrl(?string $path): string
+    {
+        if (! $path) return '';
+        if (str_starts_with($path, 'data:') || str_starts_with($path, 'http') || str_starts_with($path, '/')) {
+            return $path;
+        }
+        return '/storage/'.ltrim($path, '/');
+    }
+
+    private function storeImage(UploadedFile $file, int $albumId): string
+    {
+        $filename = 'memory_'.$albumId.'_'.uniqid('', true).'_full.jpg';
+        $path = 'memories/'.$filename;
+        $img = $this->loadImageFromUpload($file);
+        if (! $img) {
+            return $file->storeAs('memories', $filename, 'public');
+        }
+
+        $resized = $this->resizeImage($img, 1920);
+        $fullPath = storage_path('app/public/'.$path);
+        @mkdir(dirname($fullPath), 0775, true);
+        imagejpeg($resized, $fullPath, 88);
+        if ($resized !== $img) {
+            imagedestroy($img);
+        }
+        imagedestroy($resized);
+        return $path;
+    }
+
+    private function createThumbnail(UploadedFile $file, int $albumId): string
+    {
+        $filename = 'memory_'.$albumId.'_'.uniqid('', true).'_thumb.jpg';
+        $path = 'memories/thumbs/'.$filename;
+        $img = $this->loadImageFromUpload($file);
+        if (! $img) return '';
+
+        $resized = $this->resizeImage($img, 400);
+        $fullPath = storage_path('app/public/'.$path);
+        @mkdir(dirname($fullPath), 0775, true);
+        imagejpeg($resized, $fullPath, 75);
+        if ($resized !== $img) {
+            imagedestroy($img);
+        }
+        imagedestroy($resized);
+        return $path;
+    }
+
+    private function loadImageFromUpload(UploadedFile $file)
+    {
+        $mime = $file->getMimeType();
+        $tmpPath = $file->getRealPath();
+        return match ($mime) {
+            'image/jpeg', 'image/jpg' => @imagecreatefromjpeg($tmpPath),
+            'image/png' => @imagecreatefrompng($tmpPath),
+            'image/webp' => @imagecreatefromwebp($tmpPath),
+            'image/gif' => @imagecreatefromgif($tmpPath),
+            default => false,
+        };
+    }
+
+    private function resizeImage($img, int $maxDim)
+    {
+        $w = imagesx($img);
+        $h = imagesy($img);
+        if ($w <= $maxDim && $h <= $maxDim) return $img;
+        $ratio = min($maxDim / $w, $maxDim / $h);
+        $newW = (int) round($w * $ratio);
+        $newH = (int) round($h * $ratio);
+        $new = imagecreatetruecolor($newW, $newH);
+        imagecopyresampled($new, $img, 0, 0, 0, 0, $newW, $newH, $w, $h);
+        return $new;
     }
 }
