@@ -96,7 +96,7 @@ class MemoryController extends Controller
             'album' => [
                 'id' => $album->id,
                 'memories' => $album->memories()->count(),
-                'coverThumbUrl' => $album->fresh()->cover_thumb_url,
+                'coverThumbUrl' => $this->resolveImageUrl($album->fresh()->cover_thumb_url),
             ],
         ], 201);
     }
@@ -108,45 +108,61 @@ class MemoryController extends Controller
             return response()->json(['message' => 'Sul pole õigust seda mälestust muuta.'], 403);
         }
 
-        $this->mergeCamelCaseMemoryFields($request);
-
         $validated = $request->validate([
-            'title' => ['sometimes', 'string', 'max:255'],
+            'title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'story' => ['sometimes', 'nullable', 'string'],
             'who' => ['sometimes', 'nullable', 'string'],
             'when' => ['sometimes', 'nullable', 'string', 'max:255'],
             'where' => ['sometimes', 'nullable', 'string'],
-            'image' => ['sometimes', 'file', 'image', 'max:20480'],
-            'image_url' => ['sometimes', 'nullable', 'string'],
-            'image_thumb_url' => ['sometimes', 'nullable', 'string'],
+            'image' => ['sometimes', 'nullable', 'file', 'image', 'max:20480'],
             'photo_class' => ['sometimes', 'nullable', 'string', 'max:64'],
-            'favorite' => ['sometimes', 'boolean'],
+            'favorite' => ['sometimes', 'nullable', 'boolean'],
             'rotate' => ['sometimes', 'nullable', 'string', 'max:32'],
             'face_markers' => ['sometimes', 'nullable'],
         ]);
 
-        $payload = [];
-        foreach (['title', 'story', 'who', 'when', 'photo_class', 'favorite', 'rotate', 'image_url', 'image_thumb_url', 'face_markers'] as $field) {
-            if (array_key_exists($field, $validated)) {
-                $payload[$field] = $validated[$field];
+        // Uuenda ainult tekstilisi välju, mis päringus olemas on (mitte file)
+        $textFields = ['title', 'story', 'who', 'when', 'photo_class', 'rotate'];
+        foreach ($textFields as $field) {
+            if ($request->has($field)) {
+                $value = $validated[$field] ?? '';
+                $memory->{$field} = $value ?? '';
             }
-        }
-        if (array_key_exists('where', $validated)) {
-            $payload['where_note'] = $validated['where'];
-        }
-        if (array_key_exists('face_markers', $validated)) {
-            $decodedMarkers = $validated['face_markers'];
-            if (is_string($decodedMarkers)) {
-                $decodedMarkers = json_decode($decodedMarkers, true) ?? [];
-            }
-            $payload['face_markers'] = is_array($decodedMarkers) ? $decodedMarkers : [];
-        }
-        if ($request->hasFile('image')) {
-            $payload['image_url'] = $this->storeImage($request->file('image'), (int) $album->id);
-            $payload['image_thumb_url'] = $this->createThumbnail($request->file('image'), (int) $album->id);
         }
 
-        $memory->fill($payload);
+        // 'where' on andmebaasis 'where_note'
+        if ($request->has('where')) {
+            $memory->where_note = $validated['where'] ?? '';
+        }
+
+        // favorite on bool
+        if ($request->has('favorite')) {
+            $memory->favorite = filter_var($validated['favorite'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        // face_markers võib tulla JSON stringina
+        if ($request->has('face_markers')) {
+            $faceMarkers = $validated['face_markers'] ?? [];
+            if (is_string($faceMarkers)) {
+                $faceMarkers = json_decode($faceMarkers, true) ?? [];
+            }
+            $memory->face_markers = $faceMarkers;
+        }
+
+        // Kui on uus pildi fail
+        if ($request->hasFile('image')) {
+            // Kustuta vanad failid kui eksisteerivad
+            if ($memory->image_url && !str_starts_with($memory->image_url, 'data:') && !str_starts_with($memory->image_url, 'http')) {
+                @unlink(storage_path('app/public/' . $memory->image_url));
+            }
+            if ($memory->image_thumb_url && !str_starts_with($memory->image_thumb_url, 'data:') && !str_starts_with($memory->image_thumb_url, 'http')) {
+                @unlink(storage_path('app/public/' . $memory->image_thumb_url));
+            }
+
+            $memory->image_url = $this->storeImage($request->file('image'), $album->id);
+            $memory->image_thumb_url = $this->createThumbnail($request->file('image'), $album->id);
+        }
+
         $memory->save();
 
         if ($memory->image_thumb_url) {
@@ -176,7 +192,7 @@ class MemoryController extends Controller
             'album' => [
                 'id' => $album->id,
                 'memories' => $album->memories()->count(),
-                'coverThumbUrl' => $album->fresh()->cover_thumb_url,
+                'coverThumbUrl' => $this->resolveImageUrl($album->fresh()->cover_thumb_url),
             ],
         ]);
     }
@@ -202,10 +218,16 @@ class MemoryController extends Controller
     private function resolveImageUrl(?string $path): string
     {
         if (! $path) return '';
-        if (str_starts_with($path, 'data:') || str_starts_with($path, 'http') || str_starts_with($path, '/')) {
+        // Vanad base64 ja täielikud URL-id jäävad alles
+        if (str_starts_with($path, 'data:') || str_starts_with($path, 'http')) {
             return $path;
         }
-        return '/storage/'.ltrim($path, '/');
+        // Suhteline tee /storage/... muudame täielikuks URL-iks
+        if (str_starts_with($path, '/')) {
+            return rtrim(config('app.url'), '/') . $path;
+        }
+        // Failitee storage'is — konstrueerime täieliku URL-i
+        return rtrim(config('app.url'), '/') . '/storage/' . ltrim($path, '/');
     }
 
     private function storeImage(UploadedFile $file, int $albumId): string

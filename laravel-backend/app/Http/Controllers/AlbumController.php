@@ -131,9 +131,23 @@ class AlbumController extends Controller
             'memories' => (int) ($album->memories_count ?? $album->memories()->count()),
             'photoClass' => $album->photo_class,
             'rotate' => $album->rotate,
-            'coverThumbUrl' => $album->cover_thumb_url,
+            'coverThumbUrl' => $this->resolveImageUrl($album->cover_thumb_url),
             'myRole' => $album->userRole($viewer),
             'isSharedWithMe' => $album->user_id !== $viewer->id,
         ];
+    }
+
+    private function resolveImageUrl(?string $path): string
+    {
+        if (! $path) {
+            return '';
+        }
+        if (str_starts_with($path, 'data:') || str_starts_with($path, 'http')) {
+            return $path;
+        }
+        if (str_starts_with($path, '/')) {
+            return rtrim(config('app.url'), '/') . $path;
+        }
+        return rtrim(config('app.url'), '/') . '/storage/' . ltrim($path, '/');
     }
 }
