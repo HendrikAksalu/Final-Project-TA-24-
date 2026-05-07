@@ -152,11 +152,11 @@ class MemoryController extends Controller
         // Kui on uus pildi fail
         if ($request->hasFile('image')) {
             // Kustuta vanad failid kui eksisteerivad
-            if ($memory->image_url && !str_starts_with($memory->image_url, 'data:') && !str_starts_with($memory->image_url, 'http')) {
-                @unlink(storage_path('app/public/' . $memory->image_url));
+            if ($memory->image_url && ! str_starts_with($memory->image_url, 'data:') && ! str_starts_with($memory->image_url, 'http')) {
+                @unlink(storage_path('app/public/'.$memory->image_url));
             }
-            if ($memory->image_thumb_url && !str_starts_with($memory->image_thumb_url, 'data:') && !str_starts_with($memory->image_thumb_url, 'http')) {
-                @unlink(storage_path('app/public/' . $memory->image_thumb_url));
+            if ($memory->image_thumb_url && ! str_starts_with($memory->image_thumb_url, 'data:') && ! str_starts_with($memory->image_thumb_url, 'http')) {
+                @unlink(storage_path('app/public/'.$memory->image_thumb_url));
             }
 
             $memory->image_url = $this->storeImage($request->file('image'), $album->id);
@@ -217,17 +217,20 @@ class MemoryController extends Controller
 
     private function resolveImageUrl(?string $path): string
     {
-        if (! $path) return '';
+        if (! $path) {
+            return '';
+        }
         // Vanad base64 ja täielikud URL-id jäävad alles
         if (str_starts_with($path, 'data:') || str_starts_with($path, 'http')) {
             return $path;
         }
         // Suhteline tee /storage/... muudame täielikuks URL-iks
         if (str_starts_with($path, '/')) {
-            return rtrim(config('app.url'), '/') . $path;
+            return rtrim(config('app.url'), '/').$path;
         }
+
         // Failitee storage'is — konstrueerime täieliku URL-i
-        return rtrim(config('app.url'), '/') . '/storage/' . ltrim($path, '/');
+        return rtrim(config('app.url'), '/').'/storage/'.ltrim($path, '/');
     }
 
     private function storeImage(UploadedFile $file, int $albumId): string
@@ -247,6 +250,7 @@ class MemoryController extends Controller
             imagedestroy($img);
         }
         imagedestroy($resized);
+
         return $path;
     }
 
@@ -255,7 +259,9 @@ class MemoryController extends Controller
         $filename = 'memory_'.$albumId.'_'.uniqid('', true).'_thumb.jpg';
         $path = 'memories/thumbs/'.$filename;
         $img = $this->loadImageFromUpload($file);
-        if (! $img) return '';
+        if (! $img) {
+            return '';
+        }
 
         $resized = $this->resizeImage($img, 400);
         $fullPath = storage_path('app/public/'.$path);
@@ -265,6 +271,7 @@ class MemoryController extends Controller
             imagedestroy($img);
         }
         imagedestroy($resized);
+
         return $path;
     }
 
@@ -272,6 +279,7 @@ class MemoryController extends Controller
     {
         $mime = $file->getMimeType();
         $tmpPath = $file->getRealPath();
+
         return match ($mime) {
             'image/jpeg', 'image/jpg' => @imagecreatefromjpeg($tmpPath),
             'image/png' => @imagecreatefrompng($tmpPath),
@@ -285,12 +293,15 @@ class MemoryController extends Controller
     {
         $w = imagesx($img);
         $h = imagesy($img);
-        if ($w <= $maxDim && $h <= $maxDim) return $img;
+        if ($w <= $maxDim && $h <= $maxDim) {
+            return $img;
+        }
         $ratio = min($maxDim / $w, $maxDim / $h);
         $newW = (int) round($w * $ratio);
         $newH = (int) round($h * $ratio);
         $new = imagecreatetruecolor($newW, $newH);
         imagecopyresampled($new, $img, 0, 0, 0, 0, $newW, $newH, $w, $h);
+
         return $new;
     }
 }

@@ -146,8 +146,9 @@ class AlbumController extends Controller
             return $path;
         }
         if (str_starts_with($path, '/')) {
-            return rtrim(config('app.url'), '/') . $path;
+            return rtrim(config('app.url'), '/').$path;
         }
-        return rtrim(config('app.url'), '/') . '/storage/' . ltrim($path, '/');
+
+        return rtrim(config('app.url'), '/').'/storage/'.ltrim($path, '/');
     }
 }
