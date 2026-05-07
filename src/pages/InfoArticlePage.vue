@@ -14,7 +14,7 @@ try {
   user.value = null
 }
 
-const isLoggedIn = computed(() => Boolean(user.value && getToken()))
+const isLoggedIn = computed(() => Boolean(getToken()))
 
 /** Tekstid: Perearhiiv / Fototeek lõputöö kontekstis */
 const DOCS = {
@@ -135,26 +135,30 @@ async function logout() {
   <main v-if="doc" class="page page-shell">
     <AppHeader :show-auth-links="!isLoggedIn" :show-menu="isLoggedIn" @logout="logout" />
 
-    <article class="article">
-      <p class="eyebrow">Fototeek</p>
-      <h1>{{ doc.title }}</h1>
-      <p class="lead">{{ doc.lead }}</p>
-
-      <section v-for="(block, idx) in doc.sections" :key="idx" class="block">
-        <h2>{{ block.heading }}</h2>
-        <p v-for="(para, pIdx) in block.paragraphs" :key="pIdx">{{ para }}</p>
+    <div class="article-inner">
+      <section class="title">
+        <p>Fototeek</p>
+        <h1>{{ doc.title }}</h1>
+        <p class="subtitle">{{ doc.lead }}</p>
       </section>
 
-      <nav class="bottom-nav">
-        <RouterLink v-if="contentKey !== 'meist'" to="/meist">Meist</RouterLink>
-        <RouterLink v-if="contentKey !== 'privaatsus'" to="/privaatsus">Privaatsus</RouterLink>
-        <RouterLink v-if="contentKey !== 'eetika'" to="/eetika">Eetika</RouterLink>
-        <RouterLink to="/">Avaleht</RouterLink>
-      </nav>
-    </article>
+      <article class="article">
+        <section v-for="(block, idx) in doc.sections" :key="idx" class="block">
+          <h2>{{ block.heading }}</h2>
+          <p v-for="(para, pIdx) in block.paragraphs" :key="pIdx">{{ para }}</p>
+        </section>
+
+        <nav class="bottom-nav">
+          <RouterLink v-if="contentKey !== 'meist'" to="/meist">Meist</RouterLink>
+          <RouterLink v-if="contentKey !== 'privaatsus'" to="/privaatsus">Privaatsus</RouterLink>
+          <RouterLink v-if="contentKey !== 'eetika'" to="/eetika">Eetika</RouterLink>
+          <RouterLink to="/">Avaleht</RouterLink>
+        </nav>
+      </article>
+    </div>
 
     <footer class="footer">
-      <nav class="footer-links">
+      <nav>
         <RouterLink to="/meist">Meist</RouterLink>
         <RouterLink to="/privaatsus">Privaatsus</RouterLink>
         <RouterLink to="/eetika">Eetika</RouterLink>
@@ -166,38 +170,51 @@ async function logout() {
 </template>
 
 <style scoped>
-.page-shell {
-  padding: 24px 20px 48px;
-  max-width: 720px;
+.article-inner {
+  width: 100%;
+  max-width: 840px;
   margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.title {
+  margin-top: 26px;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.title > p:first-of-type {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-family: Arial, sans-serif;
+  font-size: 10px;
+  color: var(--ink, #231f20);
+}
+
+.title h1 {
+  margin: 16px 0 0;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  font-size: clamp(40px, 9vw, 56px);
+  line-height: 0.98;
+  font-weight: 500;
+  color: var(--ink, #231f20);
+}
+
+.subtitle {
+  margin: 16px auto 0;
+  max-width: 44em;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-family: Georgia, 'Times New Roman', serif !important;
+  font-style: italic;
+  color: #53473f;
+  font-size: 17px !important;
+  line-height: 1.35;
 }
 
 .article {
   color: var(--ink, #231f20);
-  font-family: var(--font-serif, 'Libre Baskerville', Georgia, serif);
-}
-
-.eyebrow {
-  font-family: var(--font-sans, 'Inter', sans-serif);
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: #7a6f66;
-  margin: 0 0 10px;
-}
-
-h1 {
-  margin: 0 0 14px;
-  font-size: clamp(1.65rem, 4vw, 2.1rem);
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-.lead {
-  margin: 0 0 28px;
-  font-size: 15px;
-  line-height: 1.65;
-  color: #4a423c;
 }
 
 .block {
@@ -241,28 +258,42 @@ h1 {
 }
 
 .footer {
-  margin-top: 40px;
+  margin-top: 62px;
+  border-top: 1px solid var(--line-soft, #dad6cd);
+  padding-top: 28px;
   text-align: center;
-  font-size: 11px;
-  color: #8a8078;
 }
 
-.footer-links {
+.footer nav {
   display: flex;
   justify-content: center;
-  gap: 16px;
-  margin-bottom: 12px;
+  gap: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  font-size: 10px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-weight: 500;
 }
 
-.footer-links a {
-  color: inherit;
+.footer a {
+  color: var(--ink, #231f20);
+  text-decoration: none;
 }
 
 .copyright {
-  margin: 0 0 4px;
+  margin-top: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 9px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: #5c534d;
 }
 
 .note {
-  margin: 0;
+  margin-top: 8px;
+  font-style: italic;
+  font-size: 13px;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  color: #655a52;
 }
 </style>
