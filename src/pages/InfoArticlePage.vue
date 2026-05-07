@@ -39,7 +39,7 @@ const DOCS = {
       {
         heading: 'Kontakt',
         paragraphs: [
-          'See on õppe eesmärgil valminud rakendus. Reaalset ärikontakti ei pruugi olla — küsimuste korral järgi oma õppeasutuse juhendit või projekti juhendaja kontakti.',
+          'Ühendust saab võtta lehe autoriga Hendrik Aksalu, meil: aksaluhendrik@gmail.com.',
         ],
       },
     ],
@@ -149,10 +149,7 @@ async function logout() {
         </section>
 
         <nav class="bottom-nav">
-          <RouterLink v-if="contentKey !== 'meist'" to="/meist">Meist</RouterLink>
-          <RouterLink v-if="contentKey !== 'privaatsus'" to="/privaatsus">Privaatsus</RouterLink>
-          <RouterLink v-if="contentKey !== 'eetika'" to="/eetika">Eetika</RouterLink>
-          <RouterLink to="/">Avaleht</RouterLink>
+          <RouterLink to="/">Tagasi avalehele</RouterLink>
         </nav>
       </article>
     </div>
