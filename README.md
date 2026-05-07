@@ -8,13 +8,13 @@ Veebipõhine rakendus **pere mälestuste ja fotode kogumiseks**: albumid, mäles
 
 ## Monorepo: miks backend ja frontend on ühes repositooriumis
 
-Projekt on korraldatud **monorepo** põhimõttel: Laravel asub kaustas `laravel-backend/`, Vue SPA repo **juurkaustas** (`src/`, juurekausta `vite.config.js`). See erineb Aiapäeviku-tüüpi ühest Laravel+Inertia tervikust, kuid monorepo põhjendused on sarnased.
+Projekt on korraldatud **monorepo** põhimõttel: Laravel asub kaustas `laravel-backend/`, Vue SPA repo **juurkaustas** (`src/`, juurekausta `vite.config.js`).
 
 ### Miks see valik sobib sellele rakendusele
 
-- **Üks checkout** — õppeprojekti ja väikese tiimi jaoks piisab ühest `git clone` käsust; API ja UI muutuvad koos ühes PR-is (nt uus väli: migratsioon + kontroller + vorm).
-- **Versioonid sobivad kokku** — sama commit kirjeldab nii API kui SPA käitumist; väheneb „kas backend või frontend on vale release’i“ segadus.
-- **Juurutus** — toodangus võid teenindada Laravelit ja staatilist SPA buildi ühest paigalduspunktist (nt Laravel `public` kaudu); üks repo hoiab dokumentatsiooni ja skripte koos.
+- **Üks checkout** — õppeprojekti ja väikese tiimi jaoks piisab ühest `git clone` käsust; API ja UI muutuvad koos ühes PR-is.
+- **Versioonid sobivad kokku** — sama commit kirjeldab nii API kui SPA käitumist.
+- **Juurutus** — üks repo hoiab deploy seadistuse, backendi ja frontendi ühes kohas.
 
 ### Plussid ja miinused
 
@@ -26,9 +26,9 @@ Projekt on korraldatud **monorepo** põhimõttel: Laravel asub kaustas `laravel-
 
 | Miinus | Praktiline tähendus |
 |--------|---------------------|
-| Kaks Node ja PHP töövoogu | Arendaja käivitab nii `composer`/`artisan` kui juurekausta `npm run dev`. |
-| Mahukas lokaalselt | `vendor/` ja `node_modules/` (juur + võimalik `laravel-backend` oma npm). |
-| CORS ja API baas-URL | SPA jaoks vaja `VITE_API_BASE_URL` ja Laravelis `FRONTEND_URL` (vt allpool). |
+| Kaks töövoogu | Arendaja käivitab nii `composer`/`artisan` kui juurekausta `npm run dev`. |
+| Mahukas lokaalselt | `vendor/` ja `node_modules/` kaustad on suured. |
+| CORS ja API baas-URL | SPA jaoks vaja `VITE_API_BASE_URL` ja Laravelis `FRONTEND_URL`. |
 
 ---
 
@@ -37,10 +37,32 @@ Projekt on korraldatud **monorepo** põhimõttel: Laravel asub kaustas `laravel-
 | Kiht | Tehnoloogia |
 |------|--------------|
 | Backend | PHP ^8.3 · Laravel ^13 · Laravel Sanctum |
-| Frontend (SPA) | Vue ^3.5 · Vue Router ^4 · Vite ^7 (repo juur) |
+| Frontend (SPA) | Vue ^3.5 · Vue Router ^4 · Vite ^7 |
 | API | JSON REST (`/api/...`) · token autentimine |
-| Stiil | Juurekausta SPA kasutab projektiga kaasas olevaid CSS-lahendusi; `laravel-backend` sisaldab eraldi Vite/Tailwind seadistust Laraveli tarbeks |
+| Andmebaas | SQLite (ainus toetatud andmebaas) |
 | Testid (backend) | PHPUnit (`php artisan test`) · Laravel Pint |
+
+---
+
+## Repo struktuur
+
+```text
+Final-Project-TA-24-/
+├── .github/workflows/      # GitHub Actions (CI + Production deploy)
+├── laravel-backend/        # Laravel 13 REST API
+│   ├── app/Http/Controllers/   # AlbumController, MemoryController, AuthController jt
+│   ├── database/migrations/    # Andmebaasi migratsioonid
+│   ├── routes/api.php          # API marsruudid
+│   └── storage/app/public/memories/  # Üleslaaditud pildid (jagatud kaust)
+├── public/                 # Vue SPA staatilised assetid
+├── scripts/                # Juurutamise abiskriptid (setup-shared-sqlite.sh)
+├── src/                    # Vue 3 SPA lähtekood
+│   ├── api/fototeekApi.js      # API päringute klient
+│   ├── pages/                  # Lehed (HomePage, AlbumPage, MemoryPage jt)
+│   └── utils/imageResize.js    # Pildi töötlus enne üleslaadimist
+├── deploy.php              # Deployer konfiguratsioon
+└── vite.config.js          # Vite ehitustööriist
+```
 
 ---
 
@@ -48,7 +70,7 @@ Projekt on korraldatud **monorepo** põhimõttel: Laravel asub kaustas `laravel-
 
 - **PHP 8.3+** ja **Composer 2+**
 - **Node.js** (soovituslik **20.19+**, vt `package.json` `engines`)
-- **SQLite** (vaikimisi Laravel `.env.example`) või **MySQL**
+- **SQLite** (ainus toetatud andmebaas)
 
 ---
 
@@ -64,20 +86,24 @@ cp .env.example .env
 php artisan key:generate
 ```
 
-**SQLite** (kui `.env` näitab `DB_CONNECTION=sqlite`):
+Sea `.env` faili vähemalt need lokaalsed väärtused:
+
+```env
+APP_NAME=Fototeek
+APP_ENV=local
+APP_DEBUG=true
+APP_URL=http://127.0.0.1:8000
+FRONTEND_URL=http://localhost:5173
+SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173
+DB_CONNECTION=sqlite
+```
+
+Loo SQLite fail, käivita migratsioonid ja storage symlink:
 
 ```bash
 touch database/database.sqlite
 php artisan migrate
-```
-
-**MySQL**: täida `.env` failis `DB_*` väljad, seejärel `php artisan migrate`.
-
-Oluline SPA jaoks:
-
-```env
-APP_URL=http://127.0.0.1:8000
-FRONTEND_URL=http://127.0.0.1:5173
+php artisan storage:link
 ```
 
 Käivita API:
@@ -85,6 +111,8 @@ Käivita API:
 ```bash
 php artisan serve
 ```
+
+> NB! Pildi töötlemiseks (resize, thumbnail) on vaja PHP GD laiendust. Ubuntu/WSL: `sudo apt install php-gd`. Zone.ee tootmiskeskkonnas on GD vaikimisi olemas.
 
 ### 2) Vue SPA (repo juur)
 
@@ -98,15 +126,13 @@ npm run dev
 
 Ava brauseris **`http://127.0.0.1:5173`** (või Vite väljastatud port). API päringud lähevad `VITE_API_BASE_URL` alla.
 
-> **Märkus:** `laravel-backend` sisaldab ka `composer run setup` / `composer run dev` skripte (Laraveli oma Vite jms). Juurekausta SPA arendamiseks piisab tavaliselt ülaltoodud kaheastmelisest käivitusest.
-
 ---
 
 ## Keskkonnamuutujad (lühike kokkuvõte)
 
 | Fail | Mõte |
 |------|------|
-| `laravel-backend/.env` | `APP_URL`, `FRONTEND_URL`, `DB_*`, `APP_KEY` |
+| `laravel-backend/.env` | `APP_URL`, `FRONTEND_URL`, `DB_CONNECTION=sqlite`, `APP_KEY` |
 | Repo juur `.env` | `VITE_API_BASE_URL` — sama host/port, kuhu Laravel API päringud lähevad |
 
 ---
@@ -122,7 +148,7 @@ npm run preview
 # Laravel (laravel-backend)
 php artisan migrate
 php artisan test
-./vendor/bin/pint          # koodistiil (kui paigaldatud)
+./vendor/bin/pint
 ```
 
 ---
@@ -141,24 +167,66 @@ cd laravel-backend && php artisan route:list
 
 ## Juurutamine
 
-Täpse Zone/GitHub Actions töövoo kirjeldus sõltub sinu hostist. Üldiselt:
+Juurutamine on automatiseeritud Deployer + GitHub Actions abil.
 
-1. Laravel: `composer install --no-dev`, `php artisan migrate --force`, `.env` toodangu väärtused.
-2. SPA: `npm run build` **repo juures**, tõsta väljund (`dist/`) sinna, kuidas Laravel või CDN staatikut teenib (nt `public/` või eraldi staatiline host).
+### Tootmiskeskkond
+
+- **Host:** Zone.ee jagatud hosting (`fototeek.ta24aksalu.itmajakas.ee`)
+- **Veebiserver:** nginx + PHP-FPM 8.3
+- **Andmebaas:** SQLite (jagatud kaustas)
+- **Pildid:** `storage/app/public/memories/`, sümlingitud kausta `public/storage`
+
+### CI / CD töövood
+
+`.github/workflows/` sisaldab kahte töövoogu:
+
+| Töövoog | Käivitub | Mida teeb |
+|---------|----------|-----------|
+| **CI** | iga push'iga | Laravel Pint koodistiili kontroll, automaattestid |
+| **Production deploy** | manuaalselt (`workflow_dispatch`) | Deployer juurutab uue versiooni serverisse |
+
+### Jagatud kaustad (oluline!)
+
+`deploy.php` failis on määratud `shared_dirs`, mis tagavad andmete püsivuse üle juurutuste:
+
+```php
+set('shared_dirs', [
+    'laravel-backend/storage',     // Logifailid, sessioonid, üleslaaditud pildid
+    'laravel-backend/database',    // SQLite andmebaasifail
+]);
+```
+
+Esmane setup tehakse käsitsi serveris käsuga `scripts/setup-shared-sqlite.sh`, mis kopeerib andmebaasifaili jagatud kausta. Pärast seda kasutavad kõik release'd sama andmebaasi ning kasutajaandmed püsivad ka pärast iga uut deploy'd.
+
+### Juurutamise käivitamine
+
+1. Tee muudatused, commit + push `main`-harusse
+2. Oota CI roheline ✓
+3. GitHub → Actions → Production deploy → Run workflow → `main` → Run workflow
+4. ~1-3 minuti pärast on uus versioon live: https://fototeek.ta24aksalu.itmajakas.ee
 
 ---
 
-## Dokumentatsioon ja tööriistad
+## Tehnilised märkused
 
-- **Confluence:** https://aksaluhendrik.atlassian.net/wiki/spaces/Fotoalbum/overview?homepageId=327792  
-- **Jira:** https://aksaluhendrik.atlassian.net/jira/software/projects/FOT/boards/7  
-- **Märkus:** README koostamisel oli abiks Cursor agent.
+### Pildid: multipart/form-data (mitte Base64)
+
+Pildid saadetakse serverisse `multipart/form-data` päringuga, mitte JSON-i sees Base64-kodeerituna. Selle põhjuseks on Zone.ee jagatud hostingu nginx-tasemel JSON-päringute range suuruspiirang. Multipart-päringud kasutavad eraldi konfiguratsiooni (`client_max_body_size`), mis on oluliselt suurem.
+
+Pildi töötluse käigus:
+1. Frontend (`src/utils/imageResize.js`) tagastab `File`-objekti (mitte Base64-stringi)
+2. Backend (`MemoryController`) võtab vastu `multipart/form-data` ja kasutab PHP GD-laiendust pildi resize-imiseks (max 1920px täispildile, 400px pisipildile)
+3. Andmebaasi salvestatakse ainult failitee (`memories/memory_X_xxx_full.jpg`), mitte pildi sisu
+
+### URL-ide resolveerimine
+
+`MemoryController::resolveImageUrl()` tagastab täielikud URL-id, kasutades `config('app.url')` väärtust. Iga keskkonna jaoks tuleb `.env` failis õige `APP_URL` seadistada (lokaalselt `http://127.0.0.1:8000`, tootmises `https://fototeek.ta24aksalu.itmajakas.ee`).
+
+### Andmebaasi jagatud kaust
+
+Deployer-i `shared_dirs` lisati `laravel-backend/database`, mis tagab et SQLite andmebaasifail jääb püsima üle juurutuste. Ilma selleta lõi iga `php artisan migrate --force` deploy ajal uue tühja andmebaasi.
 
 ---
-
-## Taustainfo (projekti mõte)
-
-Rakendus on mõeldud **peredele ja suguvõsadele**, et digitaliseerida ja säilitada fotosid ning mälestuste tekste, jagada albumeid ning hallata oma kontot (sh profiil ja salasõna). Visuaal ja funktsionaalsus laienevad vastavalt lõputöö ulatusele.
 
 ## Andmebaasi püsivus toodangus (ÜHEKORDNE SEADISTUS)
 
@@ -178,9 +246,29 @@ chmod 775 database
 
 Seejärel veendu, et `~/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/shared/laravel-backend/.env` failis on:
 
-```
+```env
 DB_CONNECTION=sqlite
-DB_DATABASE=/home/virt137753/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/shared/laravel-backend/database/database.sqlite
+DB_DATABASE=/data01/virt137753/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/shared/laravel-backend/database/database.sqlite
 ```
 
 (Absoluutne tee on tähtis — Laravel ei oska muidu SQLite faili leida, kui `database/` on sümlink jagatud kausta.)
+
+---
+
+## Dokumentatsioon ja tööriistad
+
+- **Confluence:** https://aksaluhendrik.atlassian.net/wiki/spaces/Fotoalbum/overview?homepageId=327792
+- **Jira:** https://aksaluhendrik.atlassian.net/jira/software/projects/FOT/boards/7
+- **Märkus:** README koostamisel oli abiks Cursor agent.
+
+---
+
+## Taustainfo (projekti mõte)
+
+Rakendus on mõeldud **peredele ja suguvõsadele**, et digitaliseerida ja säilitada fotosid ning mälestuste tekste, jagada albumeid ning hallata oma kontot (sh profiil ja salasõna). Visuaal ja funktsionaalsus laienevad vastavalt lõputöö ulatusele.
+
+---
+
+## Litsents
+
+Õppeotstarbeline projekt — Kuressaare Ametikool, noorem-tarkvaraarendaja TA-24 lõputöö.
