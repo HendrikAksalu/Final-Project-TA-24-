@@ -72,4 +72,19 @@ class AlbumShareController extends Controller
 
         return response()->json(['message' => 'Jagamine eemaldatud.']);
     }
+
+    public function leave(Request $request, Album $album): JsonResponse
+    {
+        $currentUser = $request->user();
+        if (! $album->userCanAccess($currentUser)) {
+            return response()->json(['message' => 'Forbidden.'], 403);
+        }
+        if ($album->user_id === $currentUser->id) {
+            return response()->json(['message' => 'Omanik ei saa albumist lahkuda.'], 422);
+        }
+
+        $album->collaborators()->detach($currentUser->id);
+
+        return response()->json(['message' => 'Lahkusid albumist.']);
+    }
 }

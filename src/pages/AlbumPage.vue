@@ -247,6 +247,21 @@ async function removeCollaborator(userId) {
   await loadCollaborators()
 }
 
+async function leaveSharedAlbum() {
+  const albumId = albumMeta.value?.id
+  if (!albumId) return
+  const ok = window.confirm('Kas soovid sellest jagatud albumist lahkuda?')
+  if (!ok) return
+
+  const res = await apiFetch(`/albums/${albumId}/leave`, { method: 'DELETE' })
+  if (!res.ok) {
+    alert(await parseApiError(res, 'Albumist lahkumine ebaõnnestus.'))
+    return
+  }
+
+  await router.push('/albumid')
+}
+
 function showMoreMemories() {
   visibleCount.value += PAGE_SIZE
 }
@@ -375,6 +390,9 @@ async function logout() {
     <div v-if="albumMeta && canEdit" class="album-actions">
       <button type="button" class="create-btn" @click="addMemory">Lisa pilt</button>
       <button v-if="hasAnyMemories" type="button" class="delete-btn" @click="deleteLatestMemory">Kustuta pilt</button>
+    </div>
+    <div v-if="albumMeta && albumMeta.myRole !== 'owner' && albumMeta.isSharedWithMe" class="leave-album-wrap">
+      <button type="button" class="leave-album-btn" @click="leaveSharedAlbum">Lahku albumist</button>
     </div>
 
     <section v-if="albumMeta && albumMeta.myRole === 'owner'" class="share-panel">
@@ -757,6 +775,25 @@ async function logout() {
   font-weight: 700;
   min-width: 200px;
   padding: 17px 16px;
+  cursor: pointer;
+}
+
+.leave-album-wrap {
+  margin-top: 12px;
+  display: flex;
+  justify-content: center;
+}
+
+.leave-album-btn {
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #fff;
+  color: #6d2d2d;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 10px;
+  padding: 10px 14px;
   cursor: pointer;
 }
 

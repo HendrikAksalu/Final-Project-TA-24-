@@ -24,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/albums/{album}/collaborators', [AlbumShareController::class, 'index']);
     Route::post('/albums/{album}/share', [AlbumShareController::class, 'store']);
     Route::delete('/albums/{album}/share/{user}', [AlbumShareController::class, 'destroy']);
+    Route::delete('/albums/{album}/leave', [AlbumShareController::class, 'leave']);
 
     Route::get('/albums/{album}/memories', [MemoryController::class, 'index']);
     Route::post('/albums/{album}/memories', [MemoryController::class, 'store']);
