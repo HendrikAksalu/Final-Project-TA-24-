@@ -70,6 +70,7 @@ async function logout() {
       <AppHeader :show-auth-links="!isLoggedIn" :show-menu="isLoggedIn" @menu-click="menuOpen = !menuOpen" />
       <div v-if="isLoggedIn && menuOpen" class="menu-popover">
         <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
+        <RouterLink to="/kasutaja-seaded" @click="menuOpen = false">Kasutaja sätted</RouterLink>
         <button type="button" @click="logout">Logi välja</button>
       </div>
     </div>

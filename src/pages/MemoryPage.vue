@@ -1,8 +1,8 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
-import { apiFetch, getToken, logoutSession, normalizeMemoryFromApi } from '@/api/fototeekApi.js'
+import { apiFetch, getToken, logoutSession, normalizeMemoryFromApi, parseApiError } from '@/api/fototeekApi.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -30,6 +30,9 @@ const pendingFaceName = ref('')
 const draftWhoName = ref('')
 const dragFaceStart = ref(null)
 const draftFaceMarker = ref(null)
+const memorySaveError = ref('')
+/** Kui kasutaja valis pildi enne kui API mälestuse kirje laeb / vältib watch()-i tühjaks kirjutamist */
+const pendingImageDraftForMemoryId = ref(null)
 
 try {
   user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
@@ -102,9 +105,10 @@ const canEditMemory = computed(() => albumMyRole.value === 'owner' || albumMyRol
 let memorySaveTimer = null
 
 async function flushSaveCurrentMemory() {
-  if (!currentMemory.value?.id) return
+  const rid = route.query.memoryId
+  if (rid === undefined || rid === null || String(rid).trim() === '') return
 
-  const id = currentMemory.value.id
+  const id = rid
   const body = {
     title: title.value,
     story: story.value,
@@ -116,20 +120,34 @@ async function flushSaveCurrentMemory() {
     faceMarkers: faceMarkers.value,
   }
 
-  const res = await apiFetch(`/memories/${id}`, { method: 'PATCH', body })
-  if (!res.ok) return
-
   try {
-    const json = await res.json()
-    if (json?.memory) {
-      const normalized = normalizeMemoryFromApi(json.memory)
-      const idx = memories.value.findIndex((m) => String(m.id) === String(id))
-      if (idx !== -1 && normalized) {
-        memories.value[idx] = normalized
+    const res = await apiFetch(`/memories/${id}`, { method: 'PATCH', body })
+    if (!res.ok) {
+      if (res.status === 413) {
+        memorySaveError.value = 'Pildi maht on serveri jaoks liiga suur. Proovi väiksemat või madalama kvaliteediga faili.'
+      } else {
+        memorySaveError.value = await parseApiError(res, 'Salvestamine ebaõnnestus.')
       }
+      return
+    }
+
+    memorySaveError.value = ''
+    pendingImageDraftForMemoryId.value = null
+
+    try {
+      const json = await res.json()
+      if (json?.memory) {
+        const normalized = normalizeMemoryFromApi(json.memory)
+        const idx = memories.value.findIndex((m) => String(m.id) === String(id))
+        if (idx !== -1 && normalized) {
+          memories.value[idx] = normalized
+        }
+      }
+    } catch (error) {
+      // ignore JSON errors
     }
   } catch (error) {
-    // ignore JSON errors
+    memorySaveError.value = 'Serveriga ei saanud ühendust. Kontrolli võrku või API aadressi.'
   }
 }
 
@@ -139,6 +157,12 @@ function scheduleSaveCurrentMemory() {
     void flushSaveCurrentMemory()
   }, 450)
 }
+
+onBeforeRouteLeave(async () => {
+  clearTimeout(memorySaveTimer)
+  memorySaveTimer = null
+  await flushSaveCurrentMemory()
+})
 
 const memoryTitle = computed(() => title.value || route.query.title || 'Mälestus')
 const whoNames = computed(() =>
@@ -254,7 +278,22 @@ function resizeImageToDataUrl(image, maxSide, quality = 0.82) {
   const ctx = canvas.getContext('2d')
   if (!ctx) return ''
   ctx.drawImage(image, 0, 0, width, height)
-  return canvas.toDataURL('image/webp', quality)
+
+  let webp = ''
+  try {
+    webp = canvas.toDataURL('image/webp', quality)
+  } catch {
+    webp = ''
+  }
+  if (webp.startsWith('data:image/webp') && webp.length > 120) {
+    return webp
+  }
+
+  try {
+    return canvas.toDataURL('image/jpeg', Math.min(0.92, quality + 0.06))
+  } catch {
+    return ''
+  }
 }
 
 async function onImageSelected(event) {
@@ -265,9 +304,17 @@ async function onImageSelected(event) {
 
   try {
     const image = await loadImageFromFile(file)
-    imageUrl.value = resizeImageToDataUrl(image, 1600, 0.82)
-    imageThumbUrl.value = resizeImageToDataUrl(image, 480, 0.72)
+    imageUrl.value = resizeImageToDataUrl(image, 1400, 0.8)
+    imageThumbUrl.value = resizeImageToDataUrl(image, 420, 0.72)
+    if (!imageUrl.value || !imageThumbUrl.value) {
+      memorySaveError.value = 'Seda pildi formaati ei õnnestunud töödelda. Proovi JPG või PNG failiga.'
+      return
+    }
+    pendingImageDraftForMemoryId.value = String(route.query.memoryId ?? '')
     saveCurrentMemory()
+    clearTimeout(memorySaveTimer)
+    memorySaveTimer = null
+    await flushSaveCurrentMemory()
   } catch (error) {
     alert('Pildi lisamine ebaõnnestus. Proovi teise failiga.')
   } finally {
@@ -323,8 +370,11 @@ function markFace() {
   markingFace.value = true
 }
 
-function goBackToAlbum() {
-  router.push({ path: '/album', query: { albumId: route.query.albumId } })
+async function goBackToAlbum() {
+  clearTimeout(memorySaveTimer)
+  memorySaveTimer = null
+  await flushSaveCurrentMemory()
+  await router.push({ path: '/album', query: { albumId: route.query.albumId } })
 }
 
 function goToAdjacentMemory(direction) {
@@ -350,6 +400,7 @@ function removeFaceMarker(markerId) {
 
 function removeImage() {
   if (!canEditMemory.value) return
+  pendingImageDraftForMemoryId.value = null
   imageUrl.value = ''
   imageThumbUrl.value = ''
   faceMarkers.value = []
@@ -361,21 +412,22 @@ function removeImage() {
 }
 
 function saveCurrentMemory() {
-  if (!currentMemory.value) return
+  const rid = route.query.memoryId
+  if (rid === undefined || rid === null || String(rid).trim() === '') return
 
-  const index = memories.value.findIndex((item) => String(item.id) === String(currentMemory.value.id))
-  if (index === -1) return
-
-  memories.value[index] = {
-    ...memories.value[index],
-    title: title.value,
-    story: story.value,
-    who: who.value,
-    when: when.value,
-    where: where.value,
-    imageUrl: imageUrl.value,
-    imageThumbUrl: imageThumbUrl.value,
-    faceMarkers: faceMarkers.value,
+  const index = memories.value.findIndex((item) => String(item.id) === String(rid))
+  if (index !== -1) {
+    memories.value[index] = {
+      ...memories.value[index],
+      title: title.value,
+      story: story.value,
+      who: who.value,
+      when: when.value,
+      where: where.value,
+      imageUrl: imageUrl.value,
+      imageThumbUrl: imageThumbUrl.value,
+      faceMarkers: faceMarkers.value,
+    }
   }
   if (canEditMemory.value) {
     scheduleSaveCurrentMemory()
@@ -431,8 +483,16 @@ watch(
     when.value = memory?.when || ''
     where.value = memory?.where || ''
     title.value = memory?.title || ''
-    imageUrl.value = memory?.imageUrl || ''
-    imageThumbUrl.value = memory?.imageThumbUrl || ''
+
+    const routeMid = String(route.query.memoryId ?? '')
+    const pendingHere =
+      pendingImageDraftForMemoryId.value !== null && pendingImageDraftForMemoryId.value === routeMid
+    const serverHasImage = Boolean(memory?.imageUrl || memory?.imageThumbUrl)
+    if (!pendingHere || serverHasImage) {
+      imageUrl.value = memory?.imageUrl || ''
+      imageThumbUrl.value = memory?.imageThumbUrl || ''
+    }
+
     if (Array.isArray(memory?.faceMarkers)) {
       faceMarkers.value = memory.faceMarkers.map((marker) => ({
         ...marker,
@@ -464,6 +524,7 @@ watch(
       />
       <div v-if="isLoggedIn && menuOpen" class="menu-popover">
         <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
+        <RouterLink to="/kasutaja-seaded" @click="menuOpen = false">Kasutaja sätted</RouterLink>
         <button type="button" @click="logout">Logi välja</button>
       </div>
     </div>
@@ -633,6 +694,7 @@ watch(
         </button>
         <button type="button" class="action-btn" @click="downloadPlaceholder">⇩</button>
       </div>
+      <p v-if="memorySaveError" class="memory-save-error" role="alert">{{ memorySaveError }}</p>
       <div class="secondary-actions">
         <template v-if="canEditMemory">
           <button type="button" class="secondary-btn" @click="openImagePicker">Lisa pilt</button>
@@ -1055,6 +1117,18 @@ watch(
 
 .action-stack {
   margin-top: 0;
+}
+
+.memory-save-error {
+  margin: 12px auto 0;
+  max-width: 520px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fdecef;
+  color: #7a1f2e;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 12px;
+  text-align: center;
 }
 
 .secondary-actions {

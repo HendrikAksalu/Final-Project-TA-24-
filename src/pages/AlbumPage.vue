@@ -79,8 +79,9 @@ async function loadAlbumPage() {
 }
 
 watch(
-  () => route.query.albumId,
+  () => [route.path, route.query.albumId],
   () => {
+    if (route.path !== '/album') return
     loadAlbumPage()
   },
   { immediate: true },
@@ -313,6 +314,7 @@ async function logout() {
       />
       <div v-if="isLoggedIn && menuOpen" class="menu-popover">
         <RouterLink to="/albumid" @click="menuOpen = false">Minu albumid</RouterLink>
+        <RouterLink to="/kasutaja-seaded" @click="menuOpen = false">Kasutaja sätted</RouterLink>
         <button type="button" @click="logout">Logi välja</button>
       </div>
     </div>

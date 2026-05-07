@@ -5,6 +5,7 @@ import HomePage from '@/pages/HomePage.vue'
 import LoginPage from '@/pages/LoginPage.vue'
 import MemoryPage from '@/pages/MemoryPage.vue'
 import RegisterPage from '@/pages/RegisterPage.vue'
+import UserSettingsPage from '@/pages/UserSettingsPage.vue'
 import { getToken } from '@/api/fototeekApi.js'
 
 function getStoredUser() {
@@ -47,6 +48,12 @@ const router = createRouter({
       path: '/albumid',
       name: 'heritage',
       component: HeritagePage,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/kasutaja-seaded',
+      name: 'user-settings',
+      component: UserSettingsPage,
       meta: { requiresAuth: true },
     },
     {
