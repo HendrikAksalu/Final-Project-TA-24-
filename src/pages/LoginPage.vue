@@ -40,7 +40,11 @@ async function onSubmit() {
     })
 
     if (!response.ok) {
-      errorMessage.value = await parseApiError(response, 'Sisselogimine ebaõnnestus. Proovi uuesti.')
+      let parsedError = await parseApiError(response, 'Sisselogimine ebaõnnestus. Proovi uuesti.')
+      if (response.status === 401 && /invalid credentials/i.test(String(parsedError))) {
+        parsedError = 'Vale e-post või parool. Kui konto on olemas, kontrolli kasutasid sama parooli mis registreerimisel.'
+      }
+      errorMessage.value = parsedError
       return
     }
 

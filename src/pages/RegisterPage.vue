@@ -46,7 +46,14 @@ async function onSubmit() {
     })
 
     if (!response.ok) {
-      errorMessage.value = await parseApiError(response, 'Registreerimine ebaõnnestus. Proovi uuesti.')
+      let parsedError = await parseApiError(response, 'Registreerimine ebaõnnestus. Proovi uuesti.')
+      if (
+        response.status === 422 &&
+        /email|e-post|already been taken|on juba kasutusel|exists/i.test(String(parsedError))
+      ) {
+        parsedError = 'Selle e-posti aadressiga kasutaja on juba olemas. Proovi sisse logida.'
+      }
+      errorMessage.value = parsedError
       return
     }
 

@@ -122,7 +122,7 @@ async function flushSaveCurrentMemory() {
   }
   const imageChanged = imageUrl.value !== lastSavedImageUrl.value
   const thumbChanged = imageThumbUrl.value !== lastSavedImageThumbUrl.value
-  if (!imageUploadBlocked.value && imageChanged) body.imageUrl = imageUrl.value
+  // Keep upload payload very small in production: thumb is enough for grid + large view fallback.
   if (!imageUploadBlocked.value && thumbChanged) body.imageThumbUrl = imageThumbUrl.value
 
   try {
@@ -189,13 +189,14 @@ const whoNames = computed(() =>
     .filter(Boolean),
 )
 function downloadPlaceholder() {
-  if (!imageUrl.value) {
+  const downloadableUrl = imageUrl.value || imageThumbUrl.value
+  if (!downloadableUrl) {
     alert('Allalaadimiseks lisa kõigepealt pilt.')
     return
   }
 
   const link = document.createElement('a')
-  link.href = imageUrl.value
+  link.href = downloadableUrl
   const safeTitle = String(memoryTitle.value || 'malestus')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
@@ -342,13 +343,7 @@ async function onImageSelected(event) {
 
   try {
     const image = await loadImageFromFile(file)
-    imageUrl.value = buildOptimizedImage(image, {
-      maxSide: 360,
-      quality: 0.3,
-      maxLength: 18000,
-      minSide: 90,
-      minQuality: 0.14,
-    })
+    imageUrl.value = ''
     imageThumbUrl.value = buildOptimizedImage(image, {
       maxSide: 120,
       quality: 0.24,
@@ -356,7 +351,7 @@ async function onImageSelected(event) {
       minSide: 70,
       minQuality: 0.12,
     })
-    if (!imageUrl.value || !imageThumbUrl.value) {
+    if (!imageThumbUrl.value) {
       memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
       return
     }
