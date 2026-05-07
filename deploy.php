@@ -26,6 +26,7 @@ set('keep_releases', 2);
 
 set('shared_dirs', [
     'laravel-backend/storage',
+    'laravel-backend/database',
 ]);
 
 set('shared_files', [

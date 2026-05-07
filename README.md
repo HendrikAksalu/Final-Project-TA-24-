@@ -159,3 +159,28 @@ Täpse Zone/GitHub Actions töövoo kirjeldus sõltub sinu hostist. Üldiselt:
 ## Taustainfo (projekti mõte)
 
 Rakendus on mõeldud **peredele ja suguvõsadele**, et digitaliseerida ja säilitada fotosid ning mälestuste tekste, jagada albumeid ning hallata oma kontot (sh profiil ja salasõna). Visuaal ja funktsionaalsus laienevad vastavalt lõputöö ulatusele.
+
+## Andmebaasi püsivus toodangus (ÜHEKORDNE SEADISTUS)
+
+Enne esimest deploy'd peale selle muudatuse on vaja serveris (Zone.ee SSH) teha:
+
+```bash
+ssh virt137753@ta24aksalu.itmajakas.ee
+cd ~/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/shared/laravel-backend
+
+# Kui praegu on andmebaasis väärtuslikke andmeid, kopeeri need välja ENNE deploy'd:
+mkdir -p database
+cp ../../current/laravel-backend/database/database.sqlite database/database.sqlite 2>/dev/null || touch database/database.sqlite
+
+chmod 664 database/database.sqlite
+chmod 775 database
+```
+
+Seejärel veendu, et `~/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/shared/laravel-backend/.env` failis on:
+
+```
+DB_CONNECTION=sqlite
+DB_DATABASE=/home/virt137753/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/shared/laravel-backend/database/database.sqlite
+```
+
+(Absoluutne tee on tähtis — Laravel ei oska muidu SQLite faili leida, kui `database/` on sümlink jagatud kausta.)
