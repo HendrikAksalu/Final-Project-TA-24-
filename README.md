@@ -152,6 +152,7 @@ Täpse Zone/GitHub Actions töövoo kirjeldus sõltub sinu hostist. Üldiselt:
 
 - **Confluence:** https://aksaluhendrik.atlassian.net/wiki/spaces/Fotoalbum/overview?homepageId=327792  
 - **Jira:** https://aksaluhendrik.atlassian.net/jira/software/projects/FOT/boards/7  
+- **Märkus:** README koostamisel oli abiks Cursor agent.
 
 ---
 
