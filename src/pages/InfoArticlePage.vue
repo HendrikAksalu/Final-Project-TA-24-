@@ -244,8 +244,6 @@ async function logout() {
   flex-wrap: wrap;
   gap: 14px 18px;
   margin-top: 36px;
-  padding-top: 22px;
-  border-top: 1px solid #ebe6df;
   font-family: var(--font-sans, 'Inter', sans-serif);
   font-size: 13px;
 }

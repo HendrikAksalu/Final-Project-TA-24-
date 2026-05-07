@@ -301,10 +301,13 @@ function buildOptimizedImage(image, { maxSide, quality, maxLength }) {
   let data = resizeImageToDataUrl(image, maxSide, quality)
   if (data && data.length <= maxLength) return data
 
-  data = resizeImageToDataUrl(image, Math.max(640, Math.round(maxSide * 0.75)), Math.max(0.52, quality - 0.12))
+  data = resizeImageToDataUrl(image, Math.max(620, Math.round(maxSide * 0.72)), Math.max(0.48, quality - 0.14))
   if (data && data.length <= maxLength) return data
 
-  data = resizeImageToDataUrl(image, Math.max(560, Math.round(maxSide * 0.62)), 0.52)
+  data = resizeImageToDataUrl(image, Math.max(520, Math.round(maxSide * 0.6)), 0.46)
+  if (data && data.length <= maxLength) return data
+
+  data = resizeImageToDataUrl(image, Math.max(460, Math.round(maxSide * 0.5)), 0.4)
   if (data && data.length <= maxLength) return data
 
   return ''
@@ -318,8 +321,8 @@ async function onImageSelected(event) {
 
   try {
     const image = await loadImageFromFile(file)
-    imageUrl.value = buildOptimizedImage(image, { maxSide: 1180, quality: 0.74, maxLength: 950000 })
-    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 360, quality: 0.64, maxLength: 180000 })
+    imageUrl.value = buildOptimizedImage(image, { maxSide: 1024, quality: 0.68, maxLength: 700000 })
+    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 300, quality: 0.56, maxLength: 120000 })
     if (!imageUrl.value || !imageThumbUrl.value) {
       memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
       return

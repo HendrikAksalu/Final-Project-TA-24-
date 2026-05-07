@@ -27,6 +27,22 @@ body {
   scrollbar-gutter: stable;
 }
 
+.footer {
+  position: relative;
+  border-top: 0 !important;
+}
+
+.footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  border-top: 1px solid var(--line-soft, #dad6cd);
+  pointer-events: none;
+}
+
 .page-shell {
   max-width: 1240px;
   margin: 0 auto;
