@@ -17,6 +17,7 @@ const isLoggedIn = computed(() => Boolean(user.value && getToken()))
 
 const albumMeta = ref(null)
 const memories = ref([])
+const pageLoading = ref(false)
 const pageError = ref('')
 const collaborators = ref([])
 const shareEmail = ref('')
@@ -44,11 +45,13 @@ async function loadCollaborators() {
 
 async function loadAlbumPage() {
   const id = route.query.albumId
+  pageLoading.value = true
   pageError.value = ''
   if (!id) {
     albumMeta.value = null
     memories.value = []
     collaborators.value = []
+    pageLoading.value = false
     return
   }
 
@@ -58,6 +61,7 @@ async function loadAlbumPage() {
     albumMeta.value = null
     memories.value = []
     pageError.value = await parseApiError(aRes, 'Albumit ei leitud.')
+    pageLoading.value = false
     return
   }
 
@@ -68,12 +72,14 @@ async function loadAlbumPage() {
     memories.value = []
     pageError.value = await parseApiError(mRes, 'Mälestusi ei laaditud.')
     await loadCollaborators()
+    pageLoading.value = false
     return
   }
 
   const memJson = await mRes.json()
   memories.value = (memJson.memories || []).map(normalizeMemoryFromApi)
   await loadCollaborators()
+  pageLoading.value = false
 }
 
 watch(
@@ -364,7 +370,10 @@ async function logout() {
       Vaata suurelt
     </button>
 
-    <section v-if="albumMeta && filteredMemories.length" class="album-grid">
+    <section v-if="albumMeta && pageLoading" class="skeleton-grid" aria-label="Laadin mälestusi">
+      <div v-for="i in 6" :key="`skeleton-${i}`" class="skeleton-card"></div>
+    </section>
+    <section v-else-if="albumMeta && filteredMemories.length" class="album-grid">
       <article v-for="memory in visibleMemories" :key="memory.id" class="polaroid" :class="memory.rotate">
         <RouterLink
           :to="{ path: '/malestus', query: { title: memory.title, albumId: route.query.albumId, memoryId: memory.id } }"
@@ -430,7 +439,12 @@ async function logout() {
       <button type="button" class="gallery-close" @click="closeGallery">×</button>
       <button type="button" class="gallery-arrow" :disabled="galleryIndex <= 0" @click="prevGalleryImage">←</button>
       <figure class="gallery-figure">
-        <img :src="currentGalleryMemory.imageUrl || currentGalleryMemory.imageThumbUrl" alt="" class="gallery-image" />
+        <img
+          :src="currentGalleryMemory.imageUrl || currentGalleryMemory.imageThumbUrl"
+          alt=""
+          class="gallery-image"
+          loading="lazy"
+        />
         <figcaption>{{ currentGalleryMemory.title || 'Pilt' }}</figcaption>
       </figure>
       <button
@@ -521,6 +535,22 @@ async function logout() {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
+}
+
+.skeleton-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.skeleton-card {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
 }
 
 .empty-state {
@@ -964,8 +994,22 @@ async function logout() {
     gap: 18px;
   }
 
+  .skeleton-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+
   .photo {
     height: 210px;
+  }
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 

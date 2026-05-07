@@ -111,13 +111,15 @@ async function logout() {
     </section>
 
     <p v-if="listError" class="list-error">{{ listError }}</p>
-    <p v-else-if="listLoading" class="list-loading">Laadin albumeid…</p>
+    <section v-else-if="listLoading" class="skeleton-grid" aria-label="Laadin albumeid">
+      <div v-for="i in 6" :key="`skeleton-${i}`" class="skeleton-card"></div>
+    </section>
 
     <section v-if="albums.length" class="album-grid">
       <article v-for="album in orderedAlbums" :key="album.id || album.title" class="album-card">
         <RouterLink :to="{ path: '/album', query: { albumId: album.id } }" class="polaroid" :class="album.rotate">
           <div class="photo" :class="{ 'empty-photo': !album.coverThumbUrl }">
-            <img v-if="album.coverThumbUrl" :src="album.coverThumbUrl" alt="" class="album-cover-image" />
+            <img v-if="album.coverThumbUrl" :src="album.coverThumbUrl" alt="" class="album-cover-image" loading="lazy" />
             <span v-else class="empty-photo-label">Tühi</span>
           </div>
           <h2>{{ album.title }}</h2>
@@ -196,6 +198,22 @@ async function logout() {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.skeleton-grid {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.skeleton-card {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
 }
 
 .album-card {
@@ -426,6 +444,11 @@ async function logout() {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 18px;
   }
+
+  .skeleton-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+  }
 }
 
 @media (min-width: 1200px) {
@@ -434,6 +457,12 @@ async function logout() {
   }
 
   .album-grid {
+    margin-top: 30px;
+    grid-template-columns: repeat(4, minmax(210px, 1fr));
+    gap: 24px;
+  }
+
+  .skeleton-grid {
     margin-top: 30px;
     grid-template-columns: repeat(4, minmax(210px, 1fr));
     gap: 24px;
@@ -450,6 +479,15 @@ async function logout() {
     margin-right: auto;
     padding-left: 28px;
     padding-right: 28px;
+  }
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 </style>

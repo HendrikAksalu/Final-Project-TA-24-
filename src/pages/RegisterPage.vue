@@ -90,7 +90,7 @@ async function logout() {
       </section>
       <section class="photo-card" aria-hidden="true">
         <div class="photo-frame">
-          <img class="photo-placeholder" :src="registerPhotoSrc" alt="Sõmera klubi, 1975" />
+          <img class="photo-placeholder" :src="registerPhotoSrc" alt="Sõmera klubi, 1975" loading="lazy" />
           <p>Sõmera klubi, 1975</p>
         </div>
       </section>

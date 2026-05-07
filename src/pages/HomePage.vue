@@ -17,6 +17,7 @@ try {
 const isLoggedIn = computed(() => Boolean(user.value && getToken()))
 const beginArchiveRoute = computed(() => (isLoggedIn.value ? '/albumid' : '/registreeru'))
 const beginArchiveLabel = computed(() => (isLoggedIn.value ? 'Vaata oma albumeid' : 'Alusta oma arhiivi'))
+const homeImageLoaded = ref(false)
 
 async function logout() {
   await logoutSession()
@@ -34,7 +35,14 @@ async function logout() {
     <div class="hero-left">
       <section class="photo-card">
         <div class="photo-frame">
-          <img class="photo-placeholder" :src="homeHeroPhotoSrc" alt='AS-i "Lääne Ehitus" töömehed, 2000' />
+          <div v-if="!homeImageLoaded" class="home-skeleton-image" aria-hidden="true"></div>
+          <img
+            class="photo-placeholder"
+            :src="homeHeroPhotoSrc"
+            alt='AS-i "Lääne Ehitus" töömehed, 2000'
+            loading="lazy"
+            @load="homeImageLoaded = true"
+          />
           <p>AS-i "Lääne Ehitus" töömehed, 2000</p>
         </div>
       </section>
@@ -136,6 +144,15 @@ async function logout() {
   object-fit: cover;
   border: 1px solid var(--line-soft, #d6d0c3);
   display: block;
+}
+
+.home-skeleton-image {
+  height: 170px;
+  width: 100%;
+  border: 1px solid var(--line-soft, #d6d0c3);
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
 }
 
 .photo-frame p {
@@ -281,5 +298,14 @@ h1 {
   font-size: 13px;
   font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
   color: #655a52;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 </style>

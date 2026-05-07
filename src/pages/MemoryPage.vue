@@ -37,6 +37,7 @@ const lastSavedImageUrl = ref('')
 const lastSavedImageThumbUrl = ref('')
 const imageUploadBlocked = ref(false)
 const lightboxOpen = ref(false)
+const imageLoading = ref(false)
 
 try {
   user.value = JSON.parse(localStorage.getItem('fototeek_user') || 'null')
@@ -577,6 +578,14 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  imageUrl,
+  (value) => {
+    imageLoading.value = Boolean(value)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
@@ -596,7 +605,16 @@ watch(
           @pointercancel="onFaceDragEnd"
           @pointerleave="onFaceDragEnd"
         >
-          <img v-if="imageUrl" :src="imageUrl" alt="" class="hero-photo-img" />
+          <div v-if="imageUrl && imageLoading" class="memory-image-skeleton" aria-hidden="true"></div>
+          <img
+            v-if="imageUrl"
+            :src="imageUrl"
+            alt=""
+            class="hero-photo-img"
+            loading="lazy"
+            @load="imageLoading = false"
+            @error="imageLoading = false"
+          />
           <span
             v-for="marker in faceMarkers"
             :key="marker.id"
@@ -784,7 +802,7 @@ watch(
         ←
       </button>
       <figure class="lightbox-figure">
-        <img :src="lightboxImageSrc" alt="" class="lightbox-image" />
+        <img :src="lightboxImageSrc" alt="" class="lightbox-image" loading="lazy" />
         <figcaption>{{ memoryTitle }}</figcaption>
       </figure>
       <button
@@ -857,6 +875,14 @@ watch(
   height: auto;
   object-fit: initial;
   display: block;
+}
+
+.memory-image-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #eee 25%, #f5f5f5 50%, #eee 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
 }
 
 .hero-photo-placeholder {
@@ -1356,6 +1382,15 @@ watch(
   font-size: 13px;
   font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
   color: #655a52;
+}
+
+@keyframes loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @media (min-width: 768px) {

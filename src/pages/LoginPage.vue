@@ -81,7 +81,7 @@ async function logout() {
       </section>
       <section class="photo-card" aria-hidden="true">
         <div class="photo-frame">
-          <img class="photo-placeholder" :src="loginPhotoSrc" alt="Koer, kass ja koer, 1932" />
+          <img class="photo-placeholder" :src="loginPhotoSrc" alt="Koer, kass ja koer, 1932" loading="lazy" />
           <p>Koer, kass ja koer, 1932</p>
         </div>
       </section>
