@@ -1,12 +1,8 @@
-// Vähendab pildi mõõtmed brauseris enne backendisse saatmist.
-// Eesmärk: hoida kogu PATCH päring (imageUrl + thumbUrl + JSON overhead)
-// alla ~250 KB, et mahtuda Zone.ee nginx limiitide alla.
-
-const MAX_DIMENSION = 1024
-const THUMB_DIMENSION = 320
-const INITIAL_QUALITY = 0.78
-const MIN_QUALITY = 0.45
-const MAX_BASE64_BYTES = 200_000 // ~200 KB base64 stringina
+const MAX_DIMENSION = 800
+const THUMB_DIMENSION = 280
+const INITIAL_QUALITY = 0.72
+const MIN_QUALITY = 0.40
+const MAX_BASE64_BYTES = 90_000 // ~90 KB — Zone.ee piiride sisse mahtumiseks
 
 function loadImage(file) {
   return new Promise((resolve, reject) => {
@@ -37,18 +33,16 @@ function drawToDataUrl(img, maxDim, quality) {
   return canvas.toDataURL('image/jpeg', quality)
 }
 
-// Proovib mitu korda: vähendab kvaliteeti, siis mõõtmeid,
-// kuni base64 mahub MAX_BASE64_BYTES alla.
 function compressUntilFits(img, startMaxDim) {
   let maxDim = startMaxDim
-  for (let attempt = 0; attempt < 6; attempt++) {
+  for (let attempt = 0; attempt < 8; attempt++) {
     let quality = INITIAL_QUALITY
     while (quality >= MIN_QUALITY) {
       const dataUrl = drawToDataUrl(img, maxDim, quality)
       if (dataUrl.length <= MAX_BASE64_BYTES) return dataUrl
-      quality = Math.round((quality - 0.07) * 100) / 100
+      quality = Math.round((quality - 0.06) * 100) / 100
     }
-    maxDim = Math.round(maxDim * 0.75)
+    maxDim = Math.round(maxDim * 0.8)
   }
   return drawToDataUrl(img, maxDim, MIN_QUALITY)
 }
@@ -59,6 +53,6 @@ export async function processImageFile(file) {
   }
   const img = await loadImage(file)
   const imageUrl = compressUntilFits(img, MAX_DIMENSION)
-  const imageThumbUrl = drawToDataUrl(img, THUMB_DIMENSION, 0.65)
+  const imageThumbUrl = drawToDataUrl(img, THUMB_DIMENSION, 0.6)
   return { imageUrl, imageThumbUrl }
 }
