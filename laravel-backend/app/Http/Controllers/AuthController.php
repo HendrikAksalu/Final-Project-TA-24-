@@ -12,9 +12,14 @@ class AuthController extends Controller
 {
     public function register(Request $request): JsonResponse
     {
+        $rawPassword = (string) $request->input('password');
+        $rawPasswordConfirmation = (string) $request->input('password_confirmation');
+
         $request->merge([
             'email' => strtolower(trim((string) $request->input('email'))),
             'name' => trim((string) $request->input('name')),
+            'password' => trim($rawPassword),
+            'password_confirmation' => trim($rawPasswordConfirmation),
         ]);
 
         $validated = $request->validate([
@@ -44,6 +49,8 @@ class AuthController extends Controller
 
     public function login(Request $request): JsonResponse
     {
+        $rawPassword = (string) $request->input('password');
+
         $request->merge([
             'email' => strtolower(trim((string) $request->input('email'))),
         ]);
@@ -54,8 +61,13 @@ class AuthController extends Controller
         ]);
 
         $user = User::where('email', $validated['email'])->first();
+        $password = $validated['password'];
+        $trimmedPassword = trim($rawPassword);
+        $passwordMatches = $user
+            && (Hash::check($password, $user->password)
+                || ($trimmedPassword !== $password && Hash::check($trimmedPassword, $user->password)));
 
-        if (! $user || ! Hash::check($validated['password'], $user->password)) {
+        if (! $passwordMatches) {
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
@@ -124,6 +136,16 @@ class AuthController extends Controller
 
     public function updatePassword(Request $request): JsonResponse
     {
+        $rawCurrentPassword = (string) $request->input('current_password');
+        $rawPassword = (string) $request->input('password');
+        $rawPasswordConfirmation = (string) $request->input('password_confirmation');
+
+        $request->merge([
+            'current_password' => trim($rawCurrentPassword),
+            'password' => trim($rawPassword),
+            'password_confirmation' => trim($rawPasswordConfirmation),
+        ]);
+
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],

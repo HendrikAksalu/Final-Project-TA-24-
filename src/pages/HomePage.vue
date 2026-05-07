@@ -77,7 +77,7 @@ async function logout() {
         <RouterLink to="/eetika">Eetika</RouterLink>
       </nav>
       <p class="copyright">© 2025 Fototeek</p>
-      <p class="note">Hoitud homsete põlvkondade jaoks.</p>
+      <p class="note">Hoiame meie esivanemate lugusid.</p>
     </footer>
   </main>
 </template>
