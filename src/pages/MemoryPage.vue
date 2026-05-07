@@ -304,17 +304,22 @@ function resizeImageToDataUrl(image, maxSide, quality = 0.82) {
 }
 
 function buildOptimizedImage(image, { maxSide, quality, maxLength }) {
-  let data = resizeImageToDataUrl(image, maxSide, quality)
-  if (data && data.length <= maxLength) return data
+  let currentSide = maxSide
+  let currentQuality = quality
+  let attempts = 0
 
-  data = resizeImageToDataUrl(image, Math.max(520, Math.round(maxSide * 0.7)), Math.max(0.42, quality - 0.18))
-  if (data && data.length <= maxLength) return data
+  while (attempts < 10) {
+    const data = resizeImageToDataUrl(image, currentSide, currentQuality)
+    if (data && data.length <= maxLength) return data
 
-  data = resizeImageToDataUrl(image, Math.max(420, Math.round(maxSide * 0.58)), 0.4)
-  if (data && data.length <= maxLength) return data
+    const canShrinkSide = currentSide > 180
+    const canLowerQuality = currentQuality > 0.26
+    if (!canShrinkSide && !canLowerQuality) break
 
-  data = resizeImageToDataUrl(image, Math.max(340, Math.round(maxSide * 0.48)), 0.34)
-  if (data && data.length <= maxLength) return data
+    if (canShrinkSide) currentSide = Math.max(180, Math.round(currentSide * 0.84))
+    if (canLowerQuality) currentQuality = Math.max(0.26, Number((currentQuality - 0.07).toFixed(2)))
+    attempts += 1
+  }
 
   return ''
 }
@@ -327,8 +332,8 @@ async function onImageSelected(event) {
 
   try {
     const image = await loadImageFromFile(file)
-    imageUrl.value = buildOptimizedImage(image, { maxSide: 760, quality: 0.58, maxLength: 240000 })
-    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 220, quality: 0.5, maxLength: 50000 })
+    imageUrl.value = buildOptimizedImage(image, { maxSide: 900, quality: 0.64, maxLength: 260000 })
+    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 260, quality: 0.54, maxLength: 60000 })
     if (!imageUrl.value || !imageThumbUrl.value) {
       memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
       return
