@@ -328,7 +328,14 @@ async function logout() {
     <div v-if="albumMeta" class="search-wrap">
       <input v-model="searchQuery" type="text" placeholder="Otsi nime või koha järgi..." class="search-input" />
     </div>
-    <button v-if="albumMeta && hasGallery" type="button" class="view-large-btn" @click="openGallery">
+    <button
+      v-if="albumMeta"
+      type="button"
+      class="view-large-btn"
+      :disabled="!hasGallery"
+      :title="hasGallery ? 'Vaata suurelt' : 'Lisa vähemalt üks pilt, et avada suur vaade'"
+      @click="openGallery"
+    >
       Vaata suurelt
     </button>
 
@@ -512,6 +519,11 @@ async function logout() {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   cursor: pointer;
+}
+
+.view-large-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .search-input {

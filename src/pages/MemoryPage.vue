@@ -313,21 +313,21 @@ function resizeImageToDataUrl(image, maxSide, quality = 0.82) {
   }
 }
 
-function buildOptimizedImage(image, { maxSide, quality, maxLength }) {
+function buildOptimizedImage(image, { maxSide, quality, maxLength, minSide = 120, minQuality = 0.18 }) {
   let currentSide = maxSide
   let currentQuality = quality
   let attempts = 0
 
-  while (attempts < 14) {
+  while (attempts < 18) {
     const data = resizeImageToDataUrl(image, currentSide, currentQuality)
     if (data && data.length <= maxLength) return data
 
-    const canShrinkSide = currentSide > 120
-    const canLowerQuality = currentQuality > 0.18
+    const canShrinkSide = currentSide > minSide
+    const canLowerQuality = currentQuality > minQuality
     if (!canShrinkSide && !canLowerQuality) break
 
-    if (canShrinkSide) currentSide = Math.max(120, Math.round(currentSide * 0.76))
-    if (canLowerQuality) currentQuality = Math.max(0.18, Number((currentQuality - 0.09).toFixed(2)))
+    if (canShrinkSide) currentSide = Math.max(minSide, Math.round(currentSide * 0.72))
+    if (canLowerQuality) currentQuality = Math.max(minQuality, Number((currentQuality - 0.08).toFixed(2)))
     attempts += 1
   }
 
@@ -342,8 +342,20 @@ async function onImageSelected(event) {
 
   try {
     const image = await loadImageFromFile(file)
-    imageUrl.value = buildOptimizedImage(image, { maxSide: 420, quality: 0.34, maxLength: 30000 })
-    imageThumbUrl.value = buildOptimizedImage(image, { maxSide: 140, quality: 0.28, maxLength: 8000 })
+    imageUrl.value = buildOptimizedImage(image, {
+      maxSide: 360,
+      quality: 0.3,
+      maxLength: 18000,
+      minSide: 90,
+      minQuality: 0.14,
+    })
+    imageThumbUrl.value = buildOptimizedImage(image, {
+      maxSide: 120,
+      quality: 0.24,
+      maxLength: 4200,
+      minSide: 70,
+      minQuality: 0.12,
+    })
     if (!imageUrl.value || !imageThumbUrl.value) {
       memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
       return
