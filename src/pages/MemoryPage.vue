@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router'
 import AppHeader from '@/components/AppHeader.vue'
 import { apiFetch, getToken, logoutSession, normalizeMemoryFromApi, parseApiError } from '@/api/fototeekApi.js'
+import { processImageFile } from '@/utils/imageResize.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -122,7 +123,7 @@ async function flushSaveCurrentMemory() {
   }
   const imageChanged = imageUrl.value !== lastSavedImageUrl.value
   const thumbChanged = imageThumbUrl.value !== lastSavedImageThumbUrl.value
-  // Keep upload payload very small in production: thumb is enough for grid + large view fallback.
+  if (!imageUploadBlocked.value && imageChanged) body.imageUrl = imageUrl.value
   if (!imageUploadBlocked.value && thumbChanged) body.imageThumbUrl = imageThumbUrl.value
 
   try {
@@ -269,72 +270,6 @@ function onFaceDragEnd() {
   saveCurrentMemory()
 }
 
-function loadImageFromFile(file) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file)
-    const img = new Image()
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      resolve(img)
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error('Pildi laadimine ebaõnnestus.'))
-    }
-    img.src = url
-  })
-}
-
-function resizeImageToDataUrl(image, maxSide, quality = 0.82) {
-  const largestSide = Math.max(image.naturalWidth, image.naturalHeight)
-  const scale = largestSide > maxSide ? maxSide / largestSide : 1
-  const width = Math.max(1, Math.round(image.naturalWidth * scale))
-  const height = Math.max(1, Math.round(image.naturalHeight * scale))
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return ''
-  ctx.drawImage(image, 0, 0, width, height)
-
-  let webp = ''
-  try {
-    webp = canvas.toDataURL('image/webp', quality)
-  } catch {
-    webp = ''
-  }
-  if (webp.startsWith('data:image/webp') && webp.length > 120) {
-    return webp
-  }
-
-  try {
-    return canvas.toDataURL('image/jpeg', Math.min(0.92, quality + 0.06))
-  } catch {
-    return ''
-  }
-}
-
-function buildOptimizedImage(image, { maxSide, quality, maxLength, minSide = 120, minQuality = 0.18 }) {
-  let currentSide = maxSide
-  let currentQuality = quality
-  let attempts = 0
-
-  while (attempts < 18) {
-    const data = resizeImageToDataUrl(image, currentSide, currentQuality)
-    if (data && data.length <= maxLength) return data
-
-    const canShrinkSide = currentSide > minSide
-    const canLowerQuality = currentQuality > minQuality
-    if (!canShrinkSide && !canLowerQuality) break
-
-    if (canShrinkSide) currentSide = Math.max(minSide, Math.round(currentSide * 0.72))
-    if (canLowerQuality) currentQuality = Math.max(minQuality, Number((currentQuality - 0.08).toFixed(2)))
-    attempts += 1
-  }
-
-  return ''
-}
-
 async function onImageSelected(event) {
   if (!canEditMemory.value) return
   const [file] = event.target.files || []
@@ -342,16 +277,10 @@ async function onImageSelected(event) {
   if (!file.type.startsWith('image/')) return
 
   try {
-    const image = await loadImageFromFile(file)
-    imageUrl.value = ''
-    imageThumbUrl.value = buildOptimizedImage(image, {
-      maxSide: 120,
-      quality: 0.24,
-      maxLength: 4200,
-      minSide: 70,
-      minQuality: 0.12,
-    })
-    if (!imageThumbUrl.value) {
+    const processed = await processImageFile(file)
+    imageUrl.value = processed.imageUrl || ''
+    imageThumbUrl.value = processed.imageThumbUrl || ''
+    if (!imageUrl.value || !imageThumbUrl.value) {
       memorySaveError.value = 'Pilt on liiga suur või formaati ei õnnestunud töödelda. Proovi väiksemat JPG/PNG faili.'
       return
     }
