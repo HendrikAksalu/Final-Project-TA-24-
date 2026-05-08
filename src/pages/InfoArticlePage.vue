@@ -64,7 +64,7 @@ const DOCS = {
       {
         heading: 'Sinu õigused ja kontroll',
         paragraphs: [
-          'Konto sättetes saad muuta oma profiili ja salasõna. Andmete kustutamise või eksportimise võimalused sõltuvad konkreetse juurutuse seadistusest — õppeprojektis tasub selle kohta küsida arendajalt või hostist.',
+          'Konto seadetes saab muuta oma profiiliandmeid ja salasõna. Andmete kustutamise või eksportimise võimalused sõltuvad konkreetsest seadistusest. Kui kasutad õppeprojekti, küsi vajadusel selle kohta arendajalt või teenusepakkujalt.',
         ],
       },
       {
