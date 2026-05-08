@@ -1,6 +1,6 @@
 # Fototeek — fotoalbum peredele mälestuste kogumiseks
 
-Veebipõhine rakendus **pere mälestuste ja fotode kogumiseks**: albumid, mälestuste kaardid, piltide lisamine, jagamine kaastöötajatega ning kasutaja profiili ja salasõna haldus.
+**Fototeek** on veebirakendus, mis aitab peredel ja suguvõsadel ühiselt fotosid ja mälestusi talletada. Rakenduses saab luua albumeid, **lisada pilte**, **jagada albumeid teiste kasutajatega** ning hallata oma kasutajakontot (profiil ja salasõna).
 
 **Frontend** on Vue 3 üheleherakendus (SPA), mis suhtleb **Laravel REST API** kaudu; autentimine toimib **Laravel Sanctumi** isikliku juurdepääsuloa tokeniga (`Bearer`), mitte Inertia sessiooniga.
 
