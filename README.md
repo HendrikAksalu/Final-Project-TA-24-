@@ -4,6 +4,8 @@
 
 **Frontend** on Vue 3 üheleherakendus (SPA), mis suhtleb **Laravel REST API** kaudu; autentimine toimib **Laravel Sanctumi** isikliku juurdepääsuloa tokeniga (`Bearer`), mitte Inertia sessiooniga.
 
+**Lõppkasutaja juhend:** [`KASUTUSJUHEND.md`](./KASUTUSJUHEND.md).
+
 ---
 
 ## Monorepo: miks backend ja frontend on ühes repositooriumis
@@ -56,6 +58,7 @@ Final-Project-TA-24-/
 │   └── storage/app/public/memories/  # Üleslaaditud pildid (jagatud kaust)
 ├── public/                 # Vue SPA staatilised assetid
 ├── scripts/                # Juurutamise abiskriptid (setup-shared-sqlite.sh)
+├── KASUTUSJUHEND.md        # Lõppkasutaja kasutusjuhend
 ├── src/                    # Vue 3 SPA lähtekood
 │   ├── api/fototeekApi.js      # API päringute klient
 │   ├── pages/                  # Lehed (HomePage, AlbumPage, MemoryPage jt)
@@ -257,6 +260,7 @@ DB_DATABASE=/data01/virt137753/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/sha
 
 ## Dokumentatsioon ja tööriistad
 
+- **Kasutusjuhend (lõppkasutaja):** [`KASUTUSJUHEND.md`](./KASUTUSJUHEND.md)
 - **Confluence:** https://aksaluhendrik.atlassian.net/wiki/spaces/Fotoalbum/overview?homepageId=327792
 - **Jira:** https://aksaluhendrik.atlassian.net/jira/software/projects/FOT/boards/7
 - **Märkus:** README koostamisel oli abiks Cursor agent.
