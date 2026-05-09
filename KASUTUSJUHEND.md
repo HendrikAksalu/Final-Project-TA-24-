@@ -1,4 +1,4 @@
-# Fototeek — kasutusjuhend
+# Fototeek: kasutusjuhend
 
 ## 1. Mis on Fototeek?
 
@@ -29,9 +29,9 @@ Pärast sisselogimist salvestatakse seansile vajalik teave brauseris (token). **
 
 Pärast sisselogimist on päises paremal menüü (**kolm punkti**):
 
-- **Minu albumid** — albumite loend (`/albumid`).
-- **Kasutaja seaded** — profiil, salasõna, konto kustutamine (`/kasutaja-seaded`).
-- **Logi välja** — lõpetab sessiooni.
+- **Minu albumid**: albumite loend (`/albumid`).
+- **Kasutaja seaded**: profiil, salasõna, konto kustutamine (`/kasutaja-seaded`).
+- **Logi välja**: lõpetab sessiooni.
 
 Logo **„Fototeek“** viib avalehele (`/`).
 
@@ -70,8 +70,8 @@ Album avaneb aadressilt `/album?albumId=…` (albumi kaardilt klõpsates tehakse
 ### Mida siin näed
 
 - Albumi **pealkiri** ja kõik selle albumi **mälestused** (pisipiltidena).
-- **Otsing** — saad filtreerida mälestusi pealkirja või „kes / kus“ teksti järgi.
-- **„Laadi veel“** — kui pilte on palju, laaditakse järgmine portsjon.
+- **Otsing**: saad filtreerida mälestusi pealkirja või „kes / kus“ teksti järgi.
+- **„Laadi veel“**: kui pilte on palju, laaditakse järgmine portsjon.
 
 ### Uue mälestuse (pildi kirje) lisamine
 
@@ -79,7 +79,7 @@ Album avaneb aadressilt `/album?albumId=…` (albumi kaardilt klõpsates tehakse
 
 ### Mälestuse kustutamine
 
-- Kasutusel on **pildi kustutamise** voog: rakendus pakub numbritega loendit ja kinnitust — järgi ekraanil kuvatavaid juhiseid.
+- Kasutusel on **pildi kustutamise** voog: rakendus pakub numbritega loendit ja kinnitust: järgi ekraanil kuvatavaid juhiseid.
 
 ### Lemmik
 
@@ -99,7 +99,7 @@ Album avaneb aadressilt `/album?albumId=…` (albumi kaardilt klõpsates tehakse
 
 - Kui sa ei ole albumi omanik, saad albumivaatest **lahkuda** jagatud albumist (kinnitusega). Omanikku see ei kustuta.
 
-**Märkus.** Kui sul on albumil ainult **vaataja** õigus, ei saa sa pilte lisada ega kustutada — seda määrab server vastavalt sinu rollile.
+**Märkus.** Kui sul on albumil ainult **vaataja** õigus, ei saa sa pilte lisada ega kustutada: seda määrab server vastavalt sinu rollile.
 
 ---
 
@@ -110,10 +110,10 @@ Detailvaade avaneb `/malestus?albumId=…&memoryId=…`.
 ### Väljad
 
 - **Pealkiri**
-- **Lugu** — pikem tekst
-- **Kes** — kes on pildil (võid kasutada mitme nime jaotamist komadega)
-- **Millal** — kuupäev või tekstiline kirjeldus
-- **Kus** — koht (samuti võib komadega jagada)
+- **Lugu**: pikem tekst
+- **Kes**: kes on pildil (võid kasutada mitme nime jaotamist komadega)
+- **Millal**: kuupäev või tekstiline kirjeldus
+- **Kus**: koht (samuti võib komadega jagada)
 
 ### Pildi lisamine või vahetamine
 
@@ -137,17 +137,17 @@ Detailvaade avaneb `/malestus?albumId=…&memoryId=…`.
 
 Lehekülg **„Kasutaja seaded“** (`/kasutaja-seaded`):
 
-- **Profiil** — muuda **nime** ja **e-posti**, seejärel salvesta.
-- **Salasõna** — sisesta **praegune salasõna** ja **uus salasõna** (koos korrusega), seejärel salvesta.
-- **Konto kustutamine** — nõuab **praegust salasõna** ja kinnitust; tegevus on **pöördumatu**.
+- **Profiil**: muuda **nime** ja **e-posti**, seejärel salvesta.
+- **Salasõna**: sisesta **praegune salasõna** ja **uus salasõna** (koos korrusega), seejärel salvesta.
+- **Konto kustutamine**: nõuab **praegust salasõna** ja kinnitust; tegevus on **pöördumatu**.
 
 ---
 
 ## 8. Infolehed (avatud ka ilma sisselogimata)
 
-- **Meist** (`/meist`) — rakenduse eesmärk ja kontekst.
-- **Privaatsus** (`/privaatsus`) — lühike ülevaade andmetest ja token-põhisest sisselogimisest (õppeprojekti kontekstis).
-- **Eetika** (`/eetika`) — mõistlik käitumine fotode ja mälestustega.
+- **Meist** (`/meist`): rakenduse eesmärk ja kontekst.
+- **Privaatsus** (`/privaatsus`): lühike ülevaade andmetest ja token-põhisest sisselogimisest (õppeprojekti kontekstis).
+- **Eetika** (`/eetika`): mõistlik käitumine fotode ja mälestustega.
 
 ---
 
@@ -164,7 +164,7 @@ Lehekülg **„Kasutaja seaded“** (`/kasutaja-seaded`):
 
 ## 10. Tehniline märkus
 
-Rakendus on **üheleherakendus**: mõnikord aitab probleemi korral **lehte värskendada**. Kui midagi ei tööta, proovi teist brauserit. Saidi andmete tühjendamine eemaldab ka sisselogimise — logid siis uuesti sisse.
+Rakendus on **üheleherakendus**: mõnikord aitab probleemi korral **lehte värskendada**. Kui midagi ei tööta, proovi teist brauserit. Saidi andmete tühjendamine eemaldab ka sisselogimise: logid siis uuesti sisse.
 
 ---
 
