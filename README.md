@@ -1,10 +1,8 @@
-# Fototeek — fotoalbum peredele mälestuste kogumiseks
+# Fototeek: fotoalbum peredele mälestuste kogumiseks
 
 **Fototeek** on veebirakendus, mis aitab peredel ja suguvõsadel ühiselt fotosid ja mälestusi talletada. Rakenduses saab luua albumeid, **lisada pilte**, **jagada albumeid teiste kasutajatega** ning hallata oma kasutajakontot (profiil ja salasõna).
 
 **Frontend** on Vue 3 üheleherakendus (SPA), mis suhtleb **Laravel REST API** kaudu; autentimine toimib **Laravel Sanctumi** isikliku juurdepääsuloa tokeniga (`Bearer`), mitte Inertia sessiooniga.
-
-**Lõppkasutaja juhend:** [`KASUTUSJUHEND.md`](./KASUTUSJUHEND.md).
 
 ---
 
@@ -14,9 +12,9 @@ Projekt on korraldatud **monorepo** põhimõttel: Laravel asub kaustas `laravel-
 
 ### Miks see valik sobib sellele rakendusele
 
-- **Üks checkout** — õppeprojekti ja väikese tiimi jaoks piisab ühest `git clone` käsust; API ja UI muutuvad koos ühes PR-is.
-- **Versioonid sobivad kokku** — sama commit kirjeldab nii API kui SPA käitumist.
-- **Juurutus** — üks repo hoiab deploy seadistuse, backendi ja frontendi ühes kohas.
+- **Üks checkout:** õppeprojekti ja väikese tiimi jaoks piisab ühest `git clone` käsust; API ja UI muutuvad koos ühes PR-is.
+- **Versioonid sobivad kokku:** sama commit kirjeldab nii API kui SPA käitumist.
+- **Juurutus:** üks repo hoiab deploy seadistuse, backendi ja frontendi ühes kohas.
 
 ### Plussid ja miinused
 
@@ -136,7 +134,7 @@ Ava brauseris **`http://127.0.0.1:5173`** (või Vite väljastatud port). API pä
 | Fail | Mõte |
 |------|------|
 | `laravel-backend/.env` | `APP_URL`, `FRONTEND_URL`, `DB_CONNECTION=sqlite`, `APP_KEY` |
-| Repo juur `.env` | `VITE_API_BASE_URL` — sama host/port, kuhu Laravel API päringud lähevad |
+| Repo juur `.env` | `VITE_API_BASE_URL`: sama host/port, kuhu Laravel API päringud lähevad |
 
 ---
 
@@ -254,7 +252,7 @@ DB_CONNECTION=sqlite
 DB_DATABASE=/data01/virt137753/domeenid/www.ta24aksalu.itmajakas.ee/fototeek/shared/laravel-backend/database/database.sqlite
 ```
 
-(Absoluutne tee on tähtis — Laravel ei oska muidu SQLite faili leida, kui `database/` on sümlink jagatud kausta.)
+(Absoluutne tee on tähtis: Laravel ei oska muidu SQLite faili leida, kui `database/` on sümlink jagatud kausta.)
 
 ---
 
@@ -275,4 +273,4 @@ Rakendus on mõeldud **peredele ja suguvõsadele**, et digitaliseerida ja säili
 
 ## Litsents
 
-Õppeotstarbeline projekt — Kuressaare Ametikool, noorem-tarkvaraarendaja TA-24 lõputöö.
+Õppeotstarbeline projekt: Kuressaare Ametikool, noorem-tarkvaraarendaja TA-24 lõputöö.
