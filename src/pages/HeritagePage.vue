@@ -254,6 +254,14 @@ async function logout() {
   transform: scale(0.98);
 }
 
+.album-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.rename-album-btn,
 .delete-album-btn {
   border: 1px solid #d6ccbe;
   border-radius: 999px;
@@ -263,36 +271,38 @@ async function logout() {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  padding: 8px 12px;
+  padding: 10px 14px;
   cursor: pointer;
-  align-self: center;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 44px;
+  white-space: nowrap;
 }
 
+.rename-album-btn:hover,
 .delete-album-btn:hover {
   background: #f1ebdf;
 }
 
-.album-actions {
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
+@media (min-width: 1200px) {
+  .album-actions {
+    flex-direction: row;
+    align-items: stretch;
+  }
 
-.rename-album-btn {
-  border: 1px solid #d6ccbe;
-  border-radius: 999px;
-  background: #f8f4ed;
-  color: #3f342d;
-  font-family: var(--font-sans, 'Inter', sans-serif);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 8px 12px;
-  cursor: pointer;
-}
-
-.rename-album-btn:hover {
-  background: #f1ebdf;
+  .rename-album-btn,
+  .delete-album-btn {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    padding: 8px 12px;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+  }
 }
 
 .polaroid::before {
@@ -397,7 +407,6 @@ async function logout() {
 
 .footer {
   margin-top: 62px;
-  border-top: 1px solid var(--line-soft, #dad6cd);
   padding-top: 28px;
   text-align: center;
 }

@@ -473,6 +473,10 @@ function removeImage() {
   draftFaceMarker.value = null
   dragFaceStart.value = null
   saveCurrentMemory()
+  closeLightbox()
+  clearTimeout(memorySaveTimer)
+  memorySaveTimer = null
+  void flushSaveCurrentMemory()
 }
 
 function saveCurrentMemory() {
@@ -784,7 +788,14 @@ watch(
       <div class="secondary-actions">
         <template v-if="canEditMemory">
           <button type="button" class="secondary-btn" @click="openImagePicker">Lisa pilt</button>
-          <button v-if="imageUrl" type="button" class="secondary-btn" @click="removeImage">Eemalda pilt</button>
+          <button
+            v-if="imageUrl || imageThumbUrl"
+            type="button"
+            class="secondary-btn"
+            @click="removeImage"
+          >
+            Eemalda pilt
+          </button>
           <button type="button" class="secondary-btn" @click="markFace">Märgi nägu</button>
         </template>
         <button type="button" class="secondary-btn" @click="goBackToAlbum">Piltide juurde</button>
@@ -792,6 +803,14 @@ watch(
     </section>
 
     <div v-if="lightboxOpen && lightboxImageSrc" class="lightbox-overlay" @click.self="closeLightbox">
+      <button
+        v-if="canEditMemory"
+        type="button"
+        class="lightbox-remove-image"
+        @click.stop="removeImage"
+      >
+        Eemalda pilt
+      </button>
       <button type="button" class="lightbox-close" @click="closeLightbox">×</button>
       <button
         type="button"
@@ -1284,6 +1303,24 @@ watch(
   z-index: 1200;
 }
 
+.lightbox-remove-image {
+  position: absolute;
+  top: 16px;
+  left: 18px;
+  padding: 8px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 999px;
+  background: rgba(90, 36, 28, 0.55);
+  color: #fdf8f0;
+  font-size: 13px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  cursor: pointer;
+}
+
+.lightbox-remove-image:hover {
+  background: rgba(120, 48, 38, 0.75);
+}
+
 .lightbox-close {
   position: absolute;
   top: 16px;
@@ -1346,7 +1383,6 @@ watch(
 
 .footer {
   margin-top: 62px;
-  border-top: 1px solid var(--line-soft, #dad6cd);
   padding-top: 28px;
   text-align: center;
 }

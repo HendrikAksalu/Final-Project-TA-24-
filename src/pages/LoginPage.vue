@@ -312,7 +312,6 @@ async function logout() {
 
 .footer {
   margin-top: 62px;
-  border-top: 1px solid var(--line-soft, #dad6cd);
   padding-top: 28px;
   text-align: center;
 }

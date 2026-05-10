@@ -7,6 +7,7 @@ use App\Models\Memory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Arr;
 
 class MemoryController extends Controller
 {
@@ -18,6 +19,39 @@ class MemoryController extends Controller
             'photo_class' => $request->input('photo_class', $request->input('photoClass')),
             'face_markers' => $request->input('face_markers', $request->input('faceMarkers')),
         ]);
+    }
+
+    /**
+     * PATCH-is ei tohi lisada image_* võtmeid kui klient neid ei saatnud — muidu Laravel muudab tühjad stringid nulliks
+     * ja valideerija käsitleks välja „saadetuna“, mis võiks juhuslikult pilte kustutada.
+     */
+    private function mergePresentCamelCaseMemoryFields(Request $request): void
+    {
+        $payload = $request->isJson()
+            ? ($request->json()?->all() ?? [])
+            : $request->request->all();
+
+        $merge = [];
+
+        if (Arr::has($payload, 'imageUrl') || Arr::has($payload, 'image_url')) {
+            $merge['image_url'] = $request->input('image_url', $request->input('imageUrl'));
+        }
+
+        if (Arr::has($payload, 'imageThumbUrl') || Arr::has($payload, 'image_thumb_url')) {
+            $merge['image_thumb_url'] = $request->input('image_thumb_url', $request->input('imageThumbUrl'));
+        }
+
+        if (Arr::has($payload, 'photoClass') || Arr::has($payload, 'photo_class')) {
+            $merge['photo_class'] = $request->input('photo_class', $request->input('photoClass'));
+        }
+
+        if (Arr::has($payload, 'faceMarkers') || Arr::has($payload, 'face_markers')) {
+            $merge['face_markers'] = $request->input('face_markers', $request->input('faceMarkers'));
+        }
+
+        if ($merge !== []) {
+            $request->merge($merge);
+        }
     }
 
     public function index(Request $request, Album $album): JsonResponse
@@ -108,6 +142,8 @@ class MemoryController extends Controller
             return response()->json(['message' => 'Sul pole õigust seda mälestust muuta.'], 403);
         }
 
+        $this->mergePresentCamelCaseMemoryFields($request);
+
         $validated = $request->validate([
             'title' => ['sometimes', 'nullable', 'string', 'max:255'],
             'story' => ['sometimes', 'nullable', 'string'],
@@ -119,6 +155,8 @@ class MemoryController extends Controller
             'favorite' => ['sometimes', 'nullable', 'boolean'],
             'rotate' => ['sometimes', 'nullable', 'string', 'max:32'],
             'face_markers' => ['sometimes', 'nullable'],
+            'image_url' => ['sometimes', 'nullable', 'string'],
+            'image_thumb_url' => ['sometimes', 'nullable', 'string'],
         ]);
 
         // Uuenda ainult tekstilisi välju, mis päringus olemas on (mitte file)
@@ -149,6 +187,22 @@ class MemoryController extends Controller
             $memory->face_markers = $faceMarkers;
         }
 
+        $clearedImagesViaJson = false;
+
+        // JSON PATCH: tühjad image_url / image_thumb_url kustutavad failid („Eemalda pilt“).
+        // ConvertEmptyStringsToNull middleware teeb tühjad stringid nulliks — peame aktsepteerima mõlemat.
+        if (! $request->hasFile('image')) {
+            $isEmptyImagePayload = static fn ($v) => $v === '' || $v === null;
+            $wantsClearImage = array_key_exists('image_url', $validated) && $isEmptyImagePayload($validated['image_url']);
+            $wantsClearThumb = array_key_exists('image_thumb_url', $validated) && $isEmptyImagePayload($validated['image_thumb_url']);
+            if ($wantsClearImage || $wantsClearThumb) {
+                $this->deleteStoredMemoryImageFiles($memory);
+                $memory->image_url = '';
+                $memory->image_thumb_url = '';
+                $clearedImagesViaJson = true;
+            }
+        }
+
         // Kui on uus pildi fail
         if ($request->hasFile('image')) {
             // Kustuta vanad failid kui eksisteerivad
@@ -167,6 +221,13 @@ class MemoryController extends Controller
 
         if ($memory->image_thumb_url) {
             $album->syncCoverFromThumb($memory->image_thumb_url);
+        } elseif ($clearedImagesViaJson) {
+            $nextThumb = $album->memories()
+                ->where('image_thumb_url', '!=', '')
+                ->orderByDesc('updated_at')
+                ->value('image_thumb_url');
+            $album->cover_thumb_url = $nextThumb ?: null;
+            $album->saveQuietly();
         }
 
         return response()->json([
@@ -195,6 +256,16 @@ class MemoryController extends Controller
                 'coverThumbUrl' => $this->resolveImageUrl($album->fresh()->cover_thumb_url),
             ],
         ]);
+    }
+
+    private function deleteStoredMemoryImageFiles(Memory $memory): void
+    {
+        foreach (['image_url', 'image_thumb_url'] as $field) {
+            $path = $memory->{$field} ?? '';
+            if ($path && ! str_starts_with($path, 'data:') && ! str_starts_with($path, 'http')) {
+                @unlink(storage_path('app/public/'.$path));
+            }
+        }
     }
 
     private function formatMemory(Memory $memory): array

@@ -263,7 +263,6 @@ h1 {
   margin-top: 72px;
   text-align: center;
   grid-area: footer;
-  border-top: 1px solid #ded7cb;
   padding-top: 30px;
 }
 

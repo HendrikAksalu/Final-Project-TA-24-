@@ -28,10 +28,25 @@ body {
 }
 
 #app .footer {
+  position: relative;
+  isolation: isolate;
   margin-top: 72px !important;
   text-align: center !important;
-  border-top: 1px solid #ded7cb !important;
+  border-top: none !important;
   padding-top: 30px !important;
+}
+
+/* Joon äärest äärani ka kitsastes (.page-shell) kontekstides */
+#app .footer::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
+  width: 100vw;
+  height: 1px;
+  background: var(--line-soft, #ded7cb);
+  pointer-events: none;
 }
 
 #app .footer nav {
