@@ -32,6 +32,18 @@ Testimiseks on rakenduses olemas eelseadistatud demo-konto, millel on **admin-õ
 
 Konto luuakse automaatselt iga deploy järel (`DemoAdminUserSeeder`). Kohalikus arenduses saab selle tekitada käsuga `php artisan db:seed --class=DemoAdminUserSeeder` (`laravel-backend` kaustas).
 
+### Pisipiltide uuesti genereerimine (vanad albumid)
+
+Kui mõni pildi-pisipilt tundub albumi vaates udune (nt vanemate üleslaadimiste puhul), saab need 800 px-iga uuesti tekitada käsuga (`laravel-backend` kaustas):
+
+```bash
+php artisan memories:regenerate-thumbs            # genereerib ainult need, mis on liiga väikesed
+php artisan memories:regenerate-thumbs --force    # genereerib kõik pisipildid uuesti
+php artisan memories:regenerate-thumbs --dry-run  # ei muuda midagi, ainult loendab
+```
+
+Sama käsk käivitatakse ka iga deploy ajal automaatselt, ent juba ajakohased pisipildid jäetakse vahele.
+
 ---
 
 ## 3. Põhinavigatsioon

@@ -315,10 +315,20 @@ class MemoryController extends Controller
             return $file->storeAs('memories', $filename, 'public');
         }
 
+        // Kui klient saatis juba sobiva mõõduga JPEG-i, salvestame originaali ilma uue kompressioonita,
+        // et vältida topelt-JPEG kvaliteedikadu (klient juba kompressis pildi enne üleslaadimist).
+        $mime = $file->getMimeType();
+        $w = imagesx($img);
+        $h = imagesy($img);
+        if (in_array($mime, ['image/jpeg', 'image/jpg'], true) && $w <= 1920 && $h <= 1920) {
+            imagedestroy($img);
+            return $file->storeAs('memories', $filename, 'public');
+        }
+
         $resized = $this->resizeImage($img, 1920);
         $fullPath = storage_path('app/public/'.$path);
         @mkdir(dirname($fullPath), 0775, true);
-        imagejpeg($resized, $fullPath, 88);
+        imagejpeg($resized, $fullPath, 92);
         if ($resized !== $img) {
             imagedestroy($img);
         }
@@ -336,10 +346,11 @@ class MemoryController extends Controller
             return '';
         }
 
-        $resized = $this->resizeImage($img, 400);
+        // 800 px pisipilt: katab retina-ekraanid (DPR 2) albumi vaates ilma udususeta.
+        $resized = $this->resizeImage($img, 800);
         $fullPath = storage_path('app/public/'.$path);
         @mkdir(dirname($fullPath), 0775, true);
-        imagejpeg($resized, $fullPath, 75);
+        imagejpeg($resized, $fullPath, 82);
         if ($resized !== $img) {
             imagedestroy($img);
         }

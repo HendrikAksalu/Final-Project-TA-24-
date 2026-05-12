@@ -1,5 +1,5 @@
 const MAX_DIMENSION = 1920
-const QUALITY = 0.88
+const QUALITY = 0.92
 
 function loadImage(file) {
   return new Promise((resolve, reject) => {

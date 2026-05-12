@@ -77,6 +77,11 @@ task('artisan:storage:link', function () {
     run('cd {{release_path}}/laravel-backend && {{bin/php}} artisan storage:link');
 });
 
+desc('Regenerate memory thumbnails (idempotent — already-large thumbs are skipped)');
+task('artisan:memories:regenerate-thumbs', function () {
+    run('cd {{release_path}}/laravel-backend && {{bin/php}} artisan memories:regenerate-thumbs');
+});
+
 desc('Clear caches');
 task('artisan:optimize:clear', function () {
     run('cd {{release_path}}/laravel-backend && {{bin/php}} artisan optimize:clear');
@@ -99,6 +104,7 @@ task('deploy', [
     'artisan:migrate',
     'artisan:seed:demo',
     'artisan:storage:link',
+    'artisan:memories:regenerate-thumbs',
     'artisan:optimize:clear',
     'artisan:optimize',
     'deploy:publish',
