@@ -24,13 +24,15 @@ require 'recipe/common.php';
 set('repository', 'git@github.com:HendrikAksalu/Final-Project-TA-24-.git');
 set('keep_releases', 2);
 
+// `database/` ei saa olla shared_dir — siis ei jõuaks uued migrations/seeders/factories failid release-i.
+// Jagame ainult SQLite-faili eraldi.
 set('shared_dirs', [
     'laravel-backend/storage',
-    'laravel-backend/database',
 ]);
 
 set('shared_files', [
     'laravel-backend/.env',
+    'laravel-backend/database/database.sqlite',
 ]);
 
 set('writable_dirs', [
