@@ -41,6 +41,10 @@ class Album extends Model
 
     public function userCanAccess(User $user): bool
     {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
         if ($this->user_id === $user->id) {
             return true;
         }
@@ -50,6 +54,10 @@ class Album extends Model
 
     public function userCanEdit(User $user): bool
     {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
         if ($this->user_id === $user->id) {
             return true;
         }
@@ -70,7 +78,12 @@ class Album extends Model
             ->where('users.id', $user->id)
             ->first()?->pivot->role;
 
-        return $role;
+        if ($role !== null) {
+            return $role;
+        }
+
+        // Admin pääseb ligi ka neile albumitele, mida ei jagatud — käsitleme teda kui omanikku, et UI kõik tegevused näeks.
+        return $user->isAdmin() ? 'owner' : null;
     }
 
     public function syncCoverFromThumb(?string $thumbUrl): void

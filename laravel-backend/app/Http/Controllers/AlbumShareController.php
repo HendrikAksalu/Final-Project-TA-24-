@@ -15,7 +15,7 @@ class AlbumShareController extends Controller
             return response()->json(['message' => 'Forbidden.'], 403);
         }
 
-        if ($album->user_id !== $request->user()->id) {
+        if ($album->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
             return response()->json(['message' => 'Ainult omanik näeb jagamise nimekirja.'], 403);
         }
 
@@ -33,7 +33,7 @@ class AlbumShareController extends Controller
 
     public function store(Request $request, Album $album): JsonResponse
     {
-        if ($album->user_id !== $request->user()->id) {
+        if ($album->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
             return response()->json(['message' => 'Ainult albumi omanik saab jagada.'], 403);
         }
 
@@ -64,7 +64,7 @@ class AlbumShareController extends Controller
 
     public function destroy(Request $request, Album $album, User $user): JsonResponse
     {
-        if ($album->user_id !== $request->user()->id) {
+        if ($album->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
             return response()->json(['message' => 'Ainult albumi omanik saab jagamise tühistada.'], 403);
         }
 

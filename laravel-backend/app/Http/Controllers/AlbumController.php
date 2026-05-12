@@ -14,21 +14,29 @@ class AlbumController extends Controller
     {
         $user = $request->user();
 
-        $owned = Album::query()
-            ->where('user_id', $user->id)
-            ->with('owner:id,name')
-            ->withCount('memories')
-            ->orderBy('created_at')
-            ->get();
+        if ($user->isAdmin()) {
+            $items = Album::query()
+                ->with('owner:id,name')
+                ->withCount('memories')
+                ->orderBy('created_at')
+                ->get();
+        } else {
+            $owned = Album::query()
+                ->where('user_id', $user->id)
+                ->with('owner:id,name')
+                ->withCount('memories')
+                ->orderBy('created_at')
+                ->get();
 
-        $shared = Album::query()
-            ->whereHas('collaborators', fn ($q) => $q->where('users.id', $user->id))
-            ->with('owner:id,name')
-            ->withCount('memories')
-            ->orderBy('created_at')
-            ->get();
+            $shared = Album::query()
+                ->whereHas('collaborators', fn ($q) => $q->where('users.id', $user->id))
+                ->with('owner:id,name')
+                ->withCount('memories')
+                ->orderBy('created_at')
+                ->get();
 
-        $items = $owned->concat($shared)->unique('id')->sortBy('created_at')->values();
+            $items = $owned->concat($shared)->unique('id')->sortBy('created_at')->values();
+        }
 
         return response()->json([
             'albums' => $items->map(fn (Album $album) => $this->formatAlbum($album, $user))->all(),
@@ -77,7 +85,7 @@ class AlbumController extends Controller
 
     public function update(Request $request, Album $album): JsonResponse
     {
-        if ($album->user_id !== $request->user()->id) {
+        if ($album->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
             return response()->json(['message' => 'Ainult albumi omanik saab seda muuta.'], 403);
         }
 
@@ -117,7 +125,7 @@ class AlbumController extends Controller
 
     public function destroy(Request $request, Album $album): JsonResponse
     {
-        if ($album->user_id !== $request->user()->id) {
+        if ($album->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
             return response()->json(['message' => 'Ainult albumi omanik saab selle kustutada.'], 403);
         }
 

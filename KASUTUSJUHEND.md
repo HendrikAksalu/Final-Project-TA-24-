@@ -23,6 +23,15 @@ Rakendust kasutad **veebibrauseris** (arvuti või nutiseade). Tööks on vaja in
 
 Pärast sisselogimist salvestatakse seansile vajalik teave brauseris (token). **Ühisel või avalikul arvutil** logi peale töö lõppu kindlasti **välja**.
 
+### Demo-konto juhendajale (admin-õigused)
+
+Testimiseks on rakenduses olemas eelseadistatud demo-konto, millel on **admin-õigused** — see näeb ja saab muuta kõiki albumeid ja mälestusi, mis aitab kogu API funktsionaalsust läbi käia.
+
+- **E-post:** `demo@fototeek.ee`
+- **Salasõna:** `Demo1234!`
+
+Konto luuakse automaatselt iga deploy järel (`DemoAdminUserSeeder`). Kohalikus arenduses saab selle tekitada käsuga `php artisan db:seed --class=DemoAdminUserSeeder` (`laravel-backend` kaustas).
+
 ---
 
 ## 3. Põhinavigatsioon

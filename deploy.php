@@ -65,6 +65,11 @@ task('artisan:migrate', function () {
     run('cd {{release_path}}/laravel-backend && {{bin/php}} artisan migrate --force');
 });
 
+desc('Seed demo admin user (idempotent)');
+task('artisan:seed:demo', function () {
+    run('cd {{release_path}}/laravel-backend && {{bin/php}} artisan db:seed --class=DemoAdminUserSeeder --force');
+});
+
 desc('Storage symlink');
 task('artisan:storage:link', function () {
     run('cd {{release_path}}/laravel-backend && {{bin/php}} artisan storage:link');
@@ -90,6 +95,7 @@ task('deploy', [
     'deploy:vendors',
     'npm:production',
     'artisan:migrate',
+    'artisan:seed:demo',
     'artisan:storage:link',
     'artisan:optimize:clear',
     'artisan:optimize',

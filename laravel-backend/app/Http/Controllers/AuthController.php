@@ -39,11 +39,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Registration successful.',
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
+            'user' => $this->formatUser($user),
         ], 201);
     }
 
@@ -78,11 +74,7 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Login successful.',
             'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
+            'user' => $this->formatUser($user),
         ]);
     }
 
@@ -98,11 +90,7 @@ class AuthController extends Controller
         $user = $request->user();
 
         return response()->json([
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
+            'user' => $this->formatUser($user),
         ]);
     }
 
@@ -126,11 +114,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profiil uuendatud.',
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-            ],
+            'user' => $this->formatUser($user),
         ]);
     }
 
@@ -165,6 +149,16 @@ class AuthController extends Controller
         return response()->json([
             'message' => 'Salasõna uuendatud.',
         ]);
+    }
+
+    private function formatUser(User $user): array
+    {
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'isAdmin' => $user->isAdmin(),
+        ];
     }
 
     public function destroy(Request $request): JsonResponse
