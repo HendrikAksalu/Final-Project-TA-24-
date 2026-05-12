@@ -48,6 +48,7 @@ class RegenerateMemoryThumbnails extends Command
                     $fullRel = $this->relativePath($memory->image_url);
                     if (! $fullRel) {
                         $skipped++;
+
                         continue;
                     }
 
@@ -55,6 +56,7 @@ class RegenerateMemoryThumbnails extends Command
                     if (! is_file($fullAbs)) {
                         $this->warn("Puudub: $fullAbs");
                         $skipped++;
+
                         continue;
                     }
 
@@ -66,6 +68,7 @@ class RegenerateMemoryThumbnails extends Command
                         $info = @getimagesize($thumbAbs);
                         if ($info && max($info[0], $info[1]) >= self::MAX_DIM - 16) {
                             $skipped++;
+
                             continue;
                         }
                     }
@@ -73,12 +76,14 @@ class RegenerateMemoryThumbnails extends Command
                     if ($dryRun) {
                         $this->line("Genereeriks: $thumbRel");
                         $processed++;
+
                         continue;
                     }
 
                     if (! $this->regenerate($fullAbs, $thumbAbs)) {
                         $this->warn("Ebaõnnestus: $fullAbs");
                         $failed++;
+
                         continue;
                     }
 

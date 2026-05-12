@@ -322,6 +322,7 @@ class MemoryController extends Controller
         $h = imagesy($img);
         if (in_array($mime, ['image/jpeg', 'image/jpg'], true) && $w <= 1920 && $h <= 1920) {
             imagedestroy($img);
+
             return $file->storeAs('memories', $filename, 'public');
         }
 
