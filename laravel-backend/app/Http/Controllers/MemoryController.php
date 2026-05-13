@@ -119,9 +119,7 @@ class MemoryController extends Controller
             'face_markers' => $faceMarkers,
         ]);
 
-        if ($thumbPath) {
-            $album->syncCoverFromThumb($thumbPath);
-        }
+        $album->syncCoverToFirstListedThumbnail();
 
         $album->loadCount('memories');
 
@@ -219,16 +217,7 @@ class MemoryController extends Controller
 
         $memory->save();
 
-        if ($memory->image_thumb_url) {
-            $album->syncCoverFromThumb($memory->image_thumb_url);
-        } elseif ($clearedImagesViaJson) {
-            $nextThumb = $album->memories()
-                ->where('image_thumb_url', '!=', '')
-                ->orderByDesc('updated_at')
-                ->value('image_thumb_url');
-            $album->cover_thumb_url = $nextThumb ?: null;
-            $album->saveQuietly();
-        }
+        $album->syncCoverToFirstListedThumbnail();
 
         return response()->json([
             'memory' => $this->formatMemory($memory->fresh()),
@@ -244,9 +233,7 @@ class MemoryController extends Controller
 
         $memory->delete();
 
-        $nextThumb = $album->memories()->orderByDesc('updated_at')->value('image_thumb_url');
-        $album->cover_thumb_url = $nextThumb;
-        $album->saveQuietly();
+        $album->syncCoverToFirstListedThumbnail();
 
         return response()->json([
             'message' => 'Mälestus kustutatud.',

@@ -86,13 +86,17 @@ class Album extends Model
         return $user->isAdmin() ? 'owner' : null;
     }
 
-    public function syncCoverFromThumb(?string $thumbUrl): void
+    /**
+     * Albumi kaas = esimese loetletud mälestuse (id kasvavalt) pisipilt, millel pilt olemas.
+     */
+    public function syncCoverToFirstListedThumbnail(): void
     {
-        if (! $thumbUrl) {
-            return;
-        }
+        $thumb = $this->memories()
+            ->where('image_thumb_url', '!=', '')
+            ->orderBy('id')
+            ->value('image_thumb_url');
 
-        $this->cover_thumb_url = $thumbUrl;
+        $this->cover_thumb_url = $thumb ?: null;
         $this->saveQuietly();
     }
 }
