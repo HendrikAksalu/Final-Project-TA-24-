@@ -391,9 +391,16 @@ async function logout() {
       <h1>{{ albumMeta?.title ?? 'Minu pildid' }}</h1>
       <div v-if="albumMeta && canRenameAlbum" class="rename-album-wrap rename-album-wrap--under-title">
         <template v-if="!editingAlbumTitle">
-          <button type="button" class="back-to-albums-btn rename-under-title-btn" @click="startRenameAlbum">
+          <a
+            href="#"
+            role="button"
+            class="back-to-albums-btn rename-under-title-btn"
+            @click.prevent="startRenameAlbum"
+            @keydown.enter.prevent="startRenameAlbum"
+            @keydown.space.prevent="startRenameAlbum"
+          >
             Muuda albumi nime
-          </button>
+          </a>
         </template>
         <template v-else>
           <div class="rename-album-row">
