@@ -39,7 +39,6 @@ const files = [
   'database/migrations/0001_01_01_000002_create_jobs_table.php',
   'resources/css/app.css',
   'resources/js/app.js',
-  'resources/views/welcome.blade.php',
   'storage/app/.gitignore',
   'storage/app/private/.gitignore',
   'storage/app/public/.gitignore',
