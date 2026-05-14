@@ -391,7 +391,9 @@ async function logout() {
       <h1>{{ albumMeta?.title ?? 'Minu pildid' }}</h1>
       <div v-if="albumMeta && canRenameAlbum" class="rename-album-wrap rename-album-wrap--under-title">
         <template v-if="!editingAlbumTitle">
-          <button type="button" class="rename-album-toggle" @click="startRenameAlbum">Muuda albumi nime</button>
+          <button type="button" class="back-to-albums-btn rename-under-title-btn" @click="startRenameAlbum">
+            Muuda albumi nime
+          </button>
         </template>
         <template v-else>
           <div class="rename-album-row">
@@ -594,24 +596,9 @@ async function logout() {
   margin-bottom: 4px;
 }
 
-.rename-album-toggle {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  color: #5a4d44;
-  padding: 6px 4px;
-  font-family: var(--font-sans, 'Inter', sans-serif);
-  font-size: 14px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: none;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+.rename-under-title-btn {
+  margin-top: 8px;
   cursor: pointer;
-}
-
-.rename-album-toggle:hover {
-  color: #1e130c;
 }
 
 .rename-album-row {
