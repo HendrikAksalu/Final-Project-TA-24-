@@ -676,6 +676,18 @@ async function logout() {
   background: #f1ebdf;
 }
 
+/* <a> saab stiili vaikselt; <button> vajab appearance + tausta, muidu WebKit annab valge kasti */
+button.back-to-albums-btn {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #f8f4ed;
+  color: #3f342d;
+}
+
+button.back-to-albums-btn:hover {
+  background: #f1ebdf;
+}
+
 .album-grid {
   margin-top: 24px;
   display: grid;
