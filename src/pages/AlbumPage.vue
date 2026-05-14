@@ -28,6 +28,54 @@ const canEdit = computed(() => {
   return role === 'owner' || role === 'editor'
 })
 
+const canRenameAlbum = computed(() => albumMeta.value?.myRole === 'owner')
+const editingAlbumTitle = ref(false)
+const albumTitleDraft = ref('')
+const renameNotice = ref('')
+
+watch(albumMeta, () => {
+  editingAlbumTitle.value = false
+  albumTitleDraft.value = ''
+  renameNotice.value = ''
+})
+
+function startRenameAlbum() {
+  if (!albumMeta.value || !canRenameAlbum.value) return
+  albumTitleDraft.value = albumMeta.value.title || ''
+  renameNotice.value = ''
+  editingAlbumTitle.value = true
+}
+
+function cancelRenameAlbum() {
+  editingAlbumTitle.value = false
+  albumTitleDraft.value = ''
+  renameNotice.value = ''
+}
+
+async function saveAlbumTitle() {
+  if (!albumMeta.value?.id || !canRenameAlbum.value) return
+  const next = albumTitleDraft.value.trim()
+  if (!next) {
+    renameNotice.value = 'Albumi nimi ei tohi olla tühi.'
+    return
+  }
+  renameNotice.value = ''
+  const res = await apiFetch(`/albums/${albumMeta.value.id}`, {
+    method: 'PATCH',
+    body: { title: next },
+  })
+  if (!res.ok) {
+    renameNotice.value = await parseApiError(res, 'Nime salvestamine ebaõnnestus.')
+    return
+  }
+  const data = await res.json()
+  if (data.album) {
+    albumMeta.value = { ...albumMeta.value, ...data.album }
+  }
+  editingAlbumTitle.value = false
+  albumTitleDraft.value = ''
+}
+
 async function loadCollaborators() {
   const id = route.query.albumId
   if (!id || albumMeta.value?.myRole !== 'owner') {
@@ -343,6 +391,27 @@ async function logout() {
       <p v-if="albumMeta" class="meta-line">
         Albumi lõi: {{ albumMeta.ownerName || 'Tundmatu' }} · Lisatud: {{ formatDate(albumMeta.createdAt) || '—' }}
       </p>
+      <div v-if="albumMeta && canRenameAlbum" class="rename-album-wrap">
+        <template v-if="!editingAlbumTitle">
+          <button type="button" class="rename-album-toggle" @click="startRenameAlbum">Muuda albumi nime</button>
+        </template>
+        <template v-else>
+          <div class="rename-album-row">
+            <input
+              v-model="albumTitleDraft"
+              type="text"
+              class="rename-album-input"
+              maxlength="255"
+              autocomplete="off"
+              aria-label="Albumi uus nimi"
+              @keydown.enter.prevent="saveAlbumTitle"
+            />
+            <button type="button" class="rename-album-save" @click="saveAlbumTitle">Salvesta</button>
+            <button type="button" class="rename-album-cancel" @click="cancelRenameAlbum">Loobu</button>
+          </div>
+          <p v-if="renameNotice" class="rename-album-notice">{{ renameNotice }}</p>
+        </template>
+      </div>
       <RouterLink to="/albumid" class="back-to-albums-btn">Tagasi albumitesse</RouterLink>
     </section>
 
@@ -507,6 +576,83 @@ async function logout() {
   font-size: 12px;
   color: #655a52;
   font-family: var(--font-sans, 'Inter', sans-serif);
+}
+
+.rename-album-wrap {
+  margin: 14px auto 0;
+  max-width: 420px;
+  padding: 0 8px;
+}
+
+.rename-album-toggle {
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #fff;
+  color: #3f342d;
+  padding: 8px 14px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.rename-album-toggle:hover {
+  background: #f8f4ed;
+}
+
+.rename-album-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.rename-album-input {
+  flex: 1;
+  min-width: 160px;
+  max-width: 100%;
+  border: 1px solid #d8d2c5;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  background: #fff;
+  font-family: var(--font-serif, 'EB Garamond', Georgia, serif);
+  color: #1c1714;
+}
+
+.rename-album-save {
+  border: 1px solid #1e130c;
+  border-radius: 999px;
+  background: #1e130c;
+  color: #fff;
+  padding: 10px 16px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+}
+
+.rename-album-cancel {
+  border: 1px solid #d6ccbe;
+  border-radius: 999px;
+  background: #f8f4ed;
+  color: #3f342d;
+  padding: 10px 14px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+}
+
+.rename-album-notice {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: #8b2e2e;
 }
 
 .back-to-albums-btn {
