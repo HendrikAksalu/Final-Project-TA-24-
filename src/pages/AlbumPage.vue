@@ -28,7 +28,12 @@ const canEdit = computed(() => {
   return role === 'owner' || role === 'editor'
 })
 
-const canRenameAlbum = computed(() => albumMeta.value?.myRole === 'owner')
+const canRenameAlbum = computed(() => {
+  const a = albumMeta.value
+  if (!a) return false
+  if (!a.isSharedWithMe) return true
+  return a.myRole === 'owner'
+})
 const editingAlbumTitle = ref(false)
 const albumTitleDraft = ref('')
 const renameNotice = ref('')
@@ -384,14 +389,7 @@ async function logout() {
     <section class="title">
       <p>Perearhiiv</p>
       <h1>{{ albumMeta?.title ?? 'Minu pildid' }}</h1>
-      <p class="subtitle">
-        Säilitame sinu pere ajaloo puudutatava olemuse püsivas ja kaunis
-        digitaalses arhiivis.
-      </p>
-      <p v-if="albumMeta" class="meta-line">
-        Albumi lõi: {{ albumMeta.ownerName || 'Tundmatu' }} · Lisatud: {{ formatDate(albumMeta.createdAt) || '—' }}
-      </p>
-      <div v-if="albumMeta && canRenameAlbum" class="rename-album-wrap">
+      <div v-if="albumMeta && canRenameAlbum" class="rename-album-wrap rename-album-wrap--under-title">
         <template v-if="!editingAlbumTitle">
           <button type="button" class="rename-album-toggle" @click="startRenameAlbum">Muuda albumi nime</button>
         </template>
@@ -412,6 +410,13 @@ async function logout() {
           <p v-if="renameNotice" class="rename-album-notice">{{ renameNotice }}</p>
         </template>
       </div>
+      <p class="subtitle">
+        Säilitame sinu pere ajaloo puudutatava olemuse püsivas ja kaunis
+        digitaalses arhiivis.
+      </p>
+      <p v-if="albumMeta" class="meta-line">
+        Albumi lõi: {{ albumMeta.ownerName || 'Tundmatu' }} · Lisatud: {{ formatDate(albumMeta.createdAt) || '—' }}
+      </p>
       <RouterLink to="/albumid" class="back-to-albums-btn">Tagasi albumitesse</RouterLink>
     </section>
 
@@ -584,21 +589,29 @@ async function logout() {
   padding: 0 8px;
 }
 
+.rename-album-wrap--under-title {
+  margin-top: 10px;
+  margin-bottom: 4px;
+}
+
 .rename-album-toggle {
-  border: 1px solid #d6ccbe;
-  border-radius: 999px;
-  background: #fff;
-  color: #3f342d;
-  padding: 8px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #5a4d44;
+  padding: 6px 4px;
   font-family: var(--font-sans, 'Inter', sans-serif);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
 .rename-album-toggle:hover {
-  background: #f8f4ed;
+  color: #1e130c;
 }
 
 .rename-album-row {
