@@ -63,6 +63,17 @@ const htmlStatic =
 </html>
 `;
 
+const securityHeadersPhp = `
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'");
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+  header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+}
+`;
+
 const phpFile = `<?php
 declare(strict_types=1);
 header('Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0');
@@ -71,6 +82,7 @@ header('Expires: Thu, 01 Jan 1970 00:00:00 GMT');
 header('Content-Type: text/html; charset=UTF-8');
 header('X-Fototeek-Shell: ' . gmdate('c'));
 header('Surrogate-Control: no-store');
+${securityHeadersPhp}
 $__fototeek_v = (string) time();
 ?>
 ${commonHead}

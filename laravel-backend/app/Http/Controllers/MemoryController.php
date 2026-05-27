@@ -81,7 +81,7 @@ class MemoryController extends Controller
             'who' => ['nullable', 'string'],
             'when' => ['nullable', 'string', 'max:255'],
             'where' => ['nullable', 'string'],
-            'image' => ['nullable', 'file', 'image', 'max:20480'],
+            'image' => ['nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:20480'],
             'photo_class' => ['nullable', 'string', 'max:64'],
             'favorite' => ['nullable', 'boolean'],
             'rotate' => ['nullable', 'string', 'max:32'],
@@ -91,8 +91,12 @@ class MemoryController extends Controller
         $imagePath = null;
         $thumbPath = null;
         if ($request->hasFile('image')) {
-            $imagePath = $this->storeImage($request->file('image'), (int) $album->id);
-            $thumbPath = $this->createThumbnail($request->file('image'), (int) $album->id);
+            $file = $request->file('image');
+            $imagePath = $this->storeImage($file, (int) $album->id);
+            $thumbPath = $this->createThumbnail($file, (int) $album->id);
+            if ($imagePath === null || $thumbPath === '') {
+                return response()->json(['message' => 'Üles laaditud fail ei ole kehtiv pilt.'], 422);
+            }
         }
 
         $faceMarkers = $validated['face_markers'] ?? [];
@@ -148,7 +152,7 @@ class MemoryController extends Controller
             'who' => ['sometimes', 'nullable', 'string'],
             'when' => ['sometimes', 'nullable', 'string', 'max:255'],
             'where' => ['sometimes', 'nullable', 'string'],
-            'image' => ['sometimes', 'nullable', 'file', 'image', 'max:20480'],
+            'image' => ['sometimes', 'nullable', 'file', 'image', 'mimes:jpeg,jpg,png,gif,webp', 'max:20480'],
             'photo_class' => ['sometimes', 'nullable', 'string', 'max:64'],
             'favorite' => ['sometimes', 'nullable', 'boolean'],
             'rotate' => ['sometimes', 'nullable', 'string', 'max:32'],
@@ -211,8 +215,14 @@ class MemoryController extends Controller
                 @unlink(storage_path('app/public/'.$memory->image_thumb_url));
             }
 
-            $memory->image_url = $this->storeImage($request->file('image'), $album->id);
-            $memory->image_thumb_url = $this->createThumbnail($request->file('image'), $album->id);
+            $file = $request->file('image');
+            $imagePath = $this->storeImage($file, $album->id);
+            $thumbPath = $this->createThumbnail($file, $album->id);
+            if ($imagePath === null || $thumbPath === '') {
+                return response()->json(['message' => 'Üles laaditud fail ei ole kehtiv pilt.'], 422);
+            }
+            $memory->image_url = $imagePath;
+            $memory->image_thumb_url = $thumbPath;
         }
 
         $memory->save();
@@ -293,13 +303,13 @@ class MemoryController extends Controller
         return rtrim(config('app.url'), '/').'/storage/'.ltrim($path, '/');
     }
 
-    private function storeImage(UploadedFile $file, int $albumId): string
+    private function storeImage(UploadedFile $file, int $albumId): ?string
     {
         $filename = 'memory_'.$albumId.'_'.uniqid('', true).'_full.jpg';
         $path = 'memories/'.$filename;
         $img = $this->loadImageFromUpload($file);
         if (! $img) {
-            return $file->storeAs('memories', $filename, 'public');
+            return null;
         }
 
         // Kui klient saatis juba sobiva mõõduga JPEG-i, salvestame originaali ilma uue kompressioonita,
