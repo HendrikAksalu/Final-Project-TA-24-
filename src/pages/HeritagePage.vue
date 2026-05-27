@@ -22,6 +22,12 @@ const orderedAlbums = computed(() =>
   [...albums.value].sort((a, b) => Number(a.id || 0) - Number(b.id || 0)),
 )
 
+function formatPiltCount(count) {
+  const n = Number(count) || 0
+  const endsInOne = n % 10 === 1 && n % 100 !== 11
+  return endsInOne ? `${n} pilt` : `${n} pilti`
+}
+
 async function refreshAlbums() {
   if (!getToken()) return
   listError.value = ''
@@ -123,7 +129,7 @@ async function logout() {
             <span v-else class="empty-photo-label">Tühi</span>
           </div>
           <h2>{{ album.title }}</h2>
-          <span>{{ album.memories }} pilti</span>
+          <span>{{ formatPiltCount(album.memories) }}</span>
           <span v-if="album.isSharedWithMe" class="shared-tag">Jagatud sinuga</span>
         </RouterLink>
         <div v-if="album.myRole === 'owner'" class="album-actions">
