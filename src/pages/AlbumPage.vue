@@ -574,7 +574,7 @@ async function logout() {
 
 .subtitle {
   margin: 16px auto 0;
-  max-width: 280px;
+  max-width: min(92vw, 34ch);
   text-transform: none !important;
   letter-spacing: 0 !important;
   font-family: Georgia, 'Times New Roman', serif !important;
@@ -582,6 +582,9 @@ async function logout() {
   color: #53473f;
   font-size: 18px !important;
   line-height: 1.3;
+  text-wrap: balance;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 .meta-line {
@@ -1150,7 +1153,7 @@ button.back-to-albums-btn:hover {
   }
 
   .subtitle {
-    max-width: 640px;
+    max-width: min(92vw, 40ch);
   }
 
   .album-grid {
