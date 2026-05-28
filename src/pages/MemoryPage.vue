@@ -697,7 +697,6 @@ watch(
 
     <section class="title">
       <p>Sinu pärand</p>
-      <h1>Säilitame sinu pereloo ajatuid niite.</h1>
       <p v-if="!editing && story" class="story editable-value" @click="startEditing('story')">{{ story }}</p>
       <p v-else-if="!editing" class="story placeholder editable-value" @click="startEditing('story')">
         Lisa siia pildi lugu...
